@@ -1,23 +1,15 @@
 """
 Granite Engine for VAR Enforcer
-Integrates IBM Granite via HuggingFace for VAR decision explanations
+Integrates IBM Granite via Ollama for VAR decision explanations
 """
 
 import os
 import json
 import logging
+import requests
 from typing import List, Dict, Optional, Any
 from enum import Enum
 from dotenv import load_dotenv
-
-# HuggingFace Transformers imports
-try:
-    from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
-    import torch
-    TRANSFORMERS_AVAILABLE = True
-except ImportError:
-    TRANSFORMERS_AVAILABLE = False
-    logging.warning("transformers not available. Using demo mode only.")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -73,77 +65,53 @@ class VARExplanation:
 class GraniteEngine:
     """
     IBM Granite Engine for generating VAR decision explanations
-    Uses HuggingFace transformers for local model execution
+    Uses Ollama for local model execution
     """
     
     def __init__(
         self,
-        model_id: Optional[str] = None,
-        demo_mode: bool = False,
-        device: Optional[str] = None
+        model_name: Optional[str] = None,
+        ollama_url: Optional[str] = None,
+        demo_mode: bool = False
     ):
         """
         Initialize Granite Engine
         
         Args:
-            model_id: HuggingFace model ID
-            demo_mode: If True, use mock responses without loading model
-            device: Device to run model on ('cuda', 'cpu', or None for auto)
+            model_name: Ollama model name
+            ollama_url: Ollama API endpoint
+            demo_mode: If True, use mock responses without API calls
         """
-        self.model_id = model_id or os.getenv("GRANITE_MODEL_ID", "ibm-granite/granite-3.0-8b-instruct")
+        self.model_name = model_name or os.getenv("OLLAMA_MODEL", "granite3.3")
+        self.ollama_url = ollama_url or os.getenv("OLLAMA_URL", "http://localhost:11434")
         self.demo_mode = demo_mode or os.getenv("DEMO_MODE", "false").lower() == "true"
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu") if TRANSFORMERS_AVAILABLE else "cpu"
         
-        self.pipeline = None
-        self.tokenizer = None
-        self.model = None
+        # Ollama API endpoint
+        self.api_url = f"{self.ollama_url}/api/generate"
         
-        # Check if we can use real model
-        if not self.demo_mode and TRANSFORMERS_AVAILABLE:
-            self._initialize_model()
-        else:
-            if not self.demo_mode:
-                logger.warning("Transformers not available or model loading failed. Running in DEMO MODE.")
-            self.demo_mode = True
+        # Check if Ollama is available
+        if not self.demo_mode:
+            if not self._check_ollama_available():
+                logger.warning("Ollama not available. Running in DEMO MODE.")
+                logger.info("Install Ollama from: https://ollama.ai")
+                logger.info(f"Then run: ollama pull {self.model_name}")
+                self.demo_mode = True
+        
+        if self.demo_mode:
             logger.info("Granite Engine initialized in DEMO MODE")
+        else:
+            logger.info(f"Granite Engine initialized with Ollama")
+            logger.info(f"Model: {self.model_name}")
+            logger.info(f"Endpoint: {self.api_url}")
     
-    def _initialize_model(self):
-        """Initialize HuggingFace model and pipeline"""
+    def _check_ollama_available(self) -> bool:
+        """Check if Ollama is running and accessible"""
         try:
-            logger.info(f"Loading Granite model from HuggingFace: {self.model_id}")
-            logger.info(f"Using device: {self.device}")
-            
-            # Load tokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
-            
-            # Load model with appropriate settings
-            self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_id,
-                torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
-                device_map="auto" if self.device == "cuda" else None,
-                low_cpu_mem_usage=True
-            )
-            
-            if self.device == "cpu":
-                self.model = self.model.to(self.device)
-            
-            # Create text generation pipeline
-            self.pipeline = pipeline(
-                "text-generation",
-                model=self.model,
-                tokenizer=self.tokenizer,
-                device=0 if self.device == "cuda" else -1
-            )
-            
-            logger.info(f"Granite model loaded successfully on {self.device}")
-            
+            response = requests.get(f"{self.ollama_url}/api/tags", timeout=2)
+            return response.status_code == 200
         except Exception as e:
-            logger.error(f"Error loading Granite model: {str(e)}")
-            logger.warning("Falling back to DEMO MODE")
-            self.demo_mode = True
-            self.pipeline = None
-            self.model = None
-            self.tokenizer = None
+            logger.debug(f"Ollama check failed: {str(e)}")
+            return False
     
     def _build_prompt(
         self,
@@ -173,7 +141,7 @@ class GraniteEngine:
         # Build context from chunks
         context_text = "\n\n".join([
             f"FIFA Rule Context {i+1}:\n{chunk['text']}"
-            for i, chunk in enumerate(context_chunks[:5])  # Limit to top 5
+            for i, chunk in enumerate(context_chunks[:5])
         ])
         
         prompt = f"""You are an expert FIFA VAR (Video Assistant Referee) analyst. Your task is to explain VAR decisions based on official FIFA Laws of the Game.
@@ -223,7 +191,6 @@ Generate the JSON response now:"""
         """
         try:
             # Try to extract JSON from response
-            # Handle cases where model adds extra text
             start_idx = response_text.find('{')
             end_idx = response_text.rfind('}') + 1
             
@@ -231,7 +198,6 @@ Generate the JSON response now:"""
                 json_str = response_text[start_idx:end_idx]
                 data = json.loads(json_str)
             else:
-                # Fallback: try parsing entire response
                 data = json.loads(response_text)
             
             return VARExplanation(
@@ -247,24 +213,23 @@ Generate the JSON response now:"""
             logger.error(f"Error parsing JSON response: {str(e)}")
             logger.debug(f"Response text: {response_text}")
             
-            # Return a fallback explanation
             return VARExplanation(
-                decision_explanation=response_text[:500],
+                decision_explanation=response_text[:500] if response_text else "Unable to generate explanation",
                 rule_cited=["Unable to parse specific rules"],
                 controversy_score=5,
                 consistency_note="Unable to assess consistency",
-                plain_language_summary=response_text[:200],
+                plain_language_summary=response_text[:200] if response_text else "Error occurred",
                 language=language
             )
     
-    def _generate_with_transformers(
+    def _generate_with_ollama(
         self,
         prompt: str,
         max_tokens: int = 1000,
         temperature: float = 0.7
     ) -> str:
         """
-        Generate response using HuggingFace transformers pipeline
+        Generate response using Ollama API
         
         Args:
             prompt: Input prompt
@@ -275,25 +240,37 @@ Generate the JSON response now:"""
             Generated text
         """
         try:
-            # Generate with pipeline
-            outputs = self.pipeline(
-                prompt,
-                max_new_tokens=max_tokens,
-                temperature=temperature,
-                top_p=0.9,
-                top_k=50,
-                do_sample=True,
-                repetition_penalty=1.1,
-                return_full_text=False
+            payload = {
+                "model": self.model_name,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "num_predict": 500,
+                    "temperature": temperature,
+                    "top_p": 0.9,
+                    "top_k": 50,
+                    "repeat_penalty": 1.1
+                }
+            }
+            
+            response = requests.post(
+                self.api_url,
+                json=payload,
+                timeout=300
             )
             
-            # Extract generated text
-            generated_text = outputs[0]['generated_text']
+            response.raise_for_status()
+            
+            result = response.json()
+            generated_text = result.get("response", "")
             
             return generated_text
             
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error calling Ollama API: {str(e)}")
+            raise
         except Exception as e:
-            logger.error(f"Error generating with transformers: {str(e)}")
+            logger.error(f"Unexpected error: {str(e)}")
             raise
     
     def _generate_demo_response(
@@ -313,12 +290,10 @@ Generate the JSON response now:"""
         Returns:
             Mock VARExplanation
         """
-        logger.info("Generating DEMO response (no model loaded)")
+        logger.info("Generating DEMO response (Ollama not available)")
         
-        # Extract some context for realistic demo
         rule_context = context_chunks[0]['text'][:200] if context_chunks else "FIFA Laws of the Game"
         
-        # Language-specific demo responses
         demo_responses = {
             Language.ENGLISH: {
                 "decision_explanation": f"Based on the FIFA Laws of the Game, this VAR decision involves careful analysis of the incident. The referee's original decision was reviewed using video evidence. Context: {rule_context}... The VAR protocol requires clear and obvious errors to be corrected. In this case, the evidence supports the final decision made.",
@@ -385,22 +360,18 @@ Generate the JSON response now:"""
         try:
             logger.info(f"Generating VAR explanation for query: {query[:100]}...")
             
-            # Demo mode
             if self.demo_mode:
                 return self._generate_demo_response(query, context_chunks, language)
             
-            # Build prompt
             prompt = self._build_prompt(query, context_chunks, language)
             
-            # Generate response
             try:
-                response_text = self._generate_with_transformers(prompt, max_tokens, temperature)
+                response_text = self._generate_with_ollama(prompt, max_tokens, temperature)
             except Exception as e:
                 logger.error(f"Error generating response: {str(e)}")
                 logger.warning("Falling back to demo mode for this request")
                 return self._generate_demo_response(query, context_chunks, language)
             
-            # Parse response
             explanation = self._parse_response(response_text, language.value)
             
             logger.info(f"Generated explanation with controversy score: {explanation.controversy_score}")
@@ -435,7 +406,6 @@ Generate the JSON response now:"""
                 explanations.append(explanation)
             except Exception as e:
                 logger.error(f"Error processing query '{query[:50]}...': {str(e)}")
-                # Add error placeholder
                 explanations.append(VARExplanation(
                     decision_explanation=f"Error processing query: {str(e)}",
                     rule_cited=["Error"],
@@ -455,16 +425,15 @@ Generate the JSON response now:"""
             Dictionary with engine info
         """
         return {
-            "model_id": self.model_id,
+            "model_name": self.model_name,
             "demo_mode": self.demo_mode,
-            "device": self.device,
-            "transformers_available": TRANSFORMERS_AVAILABLE,
-            "model_loaded": self.pipeline is not None,
+            "ollama_url": self.ollama_url,
+            "api_url": self.api_url,
+            "ollama_available": self._check_ollama_available() if not self.demo_mode else False,
             "supported_languages": [lang.value for lang in Language]
         }
 
 
-# Convenience function
 def create_granite_engine(demo_mode: bool = False) -> GraniteEngine:
     """
     Create and return a Granite Engine instance
@@ -478,19 +447,14 @@ def create_granite_engine(demo_mode: bool = False) -> GraniteEngine:
     return GraniteEngine(demo_mode=demo_mode)
 
 
-# Example usage
 if __name__ == "__main__":
-    # Create engine (will use demo mode if transformers not available)
     engine = create_granite_engine()
     
-    # Get engine info
     info = engine.get_engine_info()
     print(f"\nEngine Info: {json.dumps(info, indent=2)}")
     
-    # Example query
     query = "Was the penalty decision correct when the defender touched the ball first but also made contact with the attacker's leg?"
     
-    # Mock context chunks
     context_chunks = [
         {
             "text": "A direct free kick is awarded if a player commits any of the following offences: handles the ball deliberately, holds an opponent, impedes an opponent with contact, or tackles an opponent to gain possession of the ball, making contact with the opponent before touching the ball.",
@@ -498,13 +462,11 @@ if __name__ == "__main__":
         }
     ]
     
-    # Generate explanation
     explanation = engine.explain_var_decision(query, context_chunks, Language.ENGLISH)
     
     print(f"\nQuery: {query}")
     print(f"\nExplanation:\n{explanation.to_json()}")
     
-    # Test multilingual
     print("\n" + "="*50)
     print("Testing Spanish output:")
     explanation_es = engine.explain_var_decision(query, context_chunks, Language.SPANISH)

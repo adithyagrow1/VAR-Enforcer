@@ -241,8 +241,8 @@ async def health_check():
         if rag_pipeline:
             try:
                 stats = rag_pipeline.get_collection_stats()
-                vector_store_initialized = stats['document_count'] > 0
-                document_count = stats['document_count']
+                vector_store_initialized = stats.get('document_count', 0) > 0
+                document_count = stats.get('document_count', 0)
             except Exception as e:
                 logger.error(f"Error getting vector store stats: {str(e)}")
         
@@ -250,9 +250,13 @@ async def health_check():
         granite_mode = "unknown"
         granite_model = "unknown"
         if granite_engine:
-            info = granite_engine.get_engine_info()
-            granite_mode = "demo" if info['demo_mode'] else "live"
-            granite_model = info['model_id']
+            try:
+                info = granite_engine.get_engine_info()
+                granite_mode = "demo" if info.get('demo_mode', True) else "live"
+                # Handle different key names: model_id (old) or model_name (Ollama)
+                granite_model = info.get('model_id') or info.get('model_name', 'unknown')
+            except Exception as e:
+                logger.error(f"Error getting granite engine info: {str(e)}")
         
         # Check match data
         match_data_loaded = match_data is not None
