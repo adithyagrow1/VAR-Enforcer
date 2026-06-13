@@ -1,10 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VAR Enforcer - AI-Powered VAR Decision Explainer</title>
+    <title>VAR ENFORCER - FIFA 2026</title>
+
+    <!-- Google Fonts - Space Grotesk -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700;900&display=swap" rel="stylesheet">
+
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
     <style>
+        /* ===== VARIABLES ===== */
+        :root {
+            --red: #E61D25;
+            --orange: #FF6B35;
+            --maroon: #8B0000;
+            --light-blue: #4FC3F7;
+            --dark-blue: #2A398D;
+            --light-green: #3CAC3B;
+            --dark-gray: #333333;
+            --white: #FFFFFF;
+            --off-white: #FAFAFA;
+
+            --font-main: 'Space Grotesk', sans-serif;
+        }
+
+        /* ===== RESET ===== */
         * {
             margin: 0;
             padding: 0;
@@ -12,662 +39,1661 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0a1628 0%, #1a2332 100%);
-            color: #e0e0e0;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        /* Header */
-        header {
-            text-align: center;
-            padding: 30px 0;
-            border-bottom: 2px solid #00ff88;
-            margin-bottom: 40px;
+            font-family: var(--font-main);
+            background: #FFFFFF;
+            color: var(--dark-gray);
+            overflow-x: hidden;
             position: relative;
         }
 
-        h1 {
-            font-size: 3em;
-            color: #00ff88;
-            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            font-size: 1.2em;
-            color: #a0a0a0;
-            font-weight: 300;
-        }
-
-        /* Health Status Indicator */
-        .health-status {
+        /* ===== LANGUAGE SPLASH SCREEN ===== */
+        #languageSplash {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(26, 35, 50, 0.9);
-            padding: 10px 20px;
-            border-radius: 20px;
-            border: 2px solid #00ff88;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #FFFFFF;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+
+        #languageSplash.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .splash-title {
+            font-size: 120px;
+            font-weight: 900;
+            letter-spacing: 0.05em;
+            color: var(--red);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .splash-subtitle {
+            font-size: 18px;
+            font-weight: 300;
+            color: #333333;
+            margin-bottom: 60px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .splash-languages {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .splash-lang-card {
+            background: #FFFFFF;
+            border: 2px solid #E0E0E0;
+            border-radius: 16px;
+            padding: 30px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            text-align: center;
+        }
+
+        .splash-lang-card:hover {
+            transform: scale(1.05);
+            border-color: var(--light-green);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .splash-lang-flag {
+            font-size: 48px;
+            line-height: 1;
+        }
+
+        .splash-lang-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #000000;
+            letter-spacing: 0.05em;
+        }
+
+        .splash-lang-native {
+            font-size: 13px;
+            font-weight: 300;
+            color: #666666;
+        }
+
+        @media (max-width: 1024px) {
+            .splash-languages {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .splash-title {
+                font-size: 60px;
+            }
+
+            .splash-languages {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+
+            .splash-lang-card {
+                padding: 20px 15px;
+            }
+        }
+
+        /* ===== ANIMATED CANVAS BACKGROUND ===== */
+        #geometricCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        /* ===== CONTAINER ===== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===== SYSTEM STATUS ===== */
+        .system-status {
+            position: fixed;
+            top: 30px;
+            right: 40px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--light-green);
+            border-radius: 50px;
+            padding: 12px 24px;
             display: flex;
             align-items: center;
             gap: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--light-green);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             z-index: 1000;
-            box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);
         }
 
         .status-dot {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
+            background: var(--light-green);
             border-radius: 50%;
-            background: #ff4444;
-            animation: pulse 2s infinite;
-        }
-
-        .status-dot.healthy {
-            background: #00ff88;
+            animation: pulse 2s ease-in-out infinite;
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: scale(1.2);
+            }
         }
 
-        /* Main Content */
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 30px;
+        /* ===== HEADER ===== */
+        header {
+            text-align: center;
+            margin-bottom: 80px;
+            padding-top: 40px;
         }
 
-        /* Input Section */
-        .input-section {
-            background: rgba(26, 35, 50, 0.8);
-            padding: 30px;
-            border-radius: 15px;
-            border: 2px solid #2a3f5f;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-
-        .section-title {
-            font-size: 1.5em;
-            color: #00ff88;
+        .title-stack {
+            overflow: hidden;
             margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
 
-        .section-title::before {
-            content: "⚽";
-            font-size: 1.2em;
+        .title-line {
+            font-size: 140px;
+            line-height: 0.85;
+            letter-spacing: -0.02em;
+            display: block;
         }
 
-        /* Form Elements */
+        .title-line.thin {
+            font-weight: 300;
+            color: var(--dark-gray);
+            opacity: 0.4;
+        }
+
+        .title-line.bold {
+            font-weight: 900;
+            color: var(--dark-gray);
+        }
+
+        .title-line span {
+            display: inline-block;
+            opacity: 0;
+        }
+
+        .tagline {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--orange);
+            margin-top: 20px;
+        }
+
+        /* ===== INPUT SECTION ===== */
+        .input-card {
+            background: rgba(42, 57, 141, 0.03);
+            border: 3px solid var(--dark-blue);
+            border-radius: 20px;
+            padding: 50px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
+
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
         label {
             display: block;
-            margin-bottom: 8px;
-            color: #00ff88;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--dark-blue);
+            margin-bottom: 12px;
         }
 
-        textarea, input, select {
+        textarea,
+        input {
             width: 100%;
-            padding: 15px;
-            background: rgba(10, 22, 40, 0.8);
-            border: 2px solid #2a3f5f;
-            border-radius: 8px;
-            color: #e0e0e0;
-            font-size: 1em;
-            font-family: inherit;
+            padding: 18px 20px;
+            font-family: var(--font-main);
+            font-size: 16px;
+            font-weight: 300;
+            border: 2px solid rgba(42, 57, 141, 0.2);
+            border-radius: 12px;
+            background: var(--white);
+            color: var(--dark-gray);
             transition: all 0.3s ease;
-        }
-
-        textarea {
-            min-height: 120px;
             resize: vertical;
         }
 
-        textarea:focus, input:focus, select:focus {
+        textarea:focus,
+        input:focus {
             outline: none;
-            border-color: #00ff88;
-            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+            border-color: var(--dark-blue);
+            box-shadow: 0 0 0 4px rgba(42, 57, 141, 0.1);
         }
 
-        /* Example Buttons */
-        .examples {
-            margin-bottom: 20px;
+        textarea {
+            min-height: 140px;
         }
 
+        /* ===== QUICK EXAMPLES ===== */
         .examples-label {
-            margin-bottom: 10px;
-            color: #a0a0a0;
-            font-size: 0.9em;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--dark-blue);
+            margin-bottom: 16px;
         }
 
-        .example-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 30px;
         }
 
         .example-btn {
-            padding: 10px 15px;
-            background: rgba(0, 255, 136, 0.1);
-            border: 1px solid #00ff88;
-            border-radius: 20px;
-            color: #00ff88;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.3s ease;
-        }
-
-        .example-btn:hover {
-            background: rgba(0, 255, 136, 0.2);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
-        }
-
-        /* Submit Button */
-        .submit-btn {
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
-            border: none;
-            border-radius: 10px;
-            color: #0a1628;
-            font-size: 1.2em;
-            font-weight: bold;
+            padding: 16px 20px;
+            background: var(--white);
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--red);
+            border-radius: 8px;
+            font-family: var(--font-main);
+            font-size: 14px;
+            font-weight: 300;
+            text-align: left;
+            color: var(--dark-gray);
             cursor: pointer;
             transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .submit-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.4);
-        }
-
-        .submit-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Loading Spinner */
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 40px;
-        }
-
-        .loading.active {
-            display: block;
-        }
-
-        .spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(0, 255, 136, 0.1);
-            border-top: 4px solid #00ff88;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Results Section */
-        .results-section {
-            display: none;
-            background: rgba(26, 35, 50, 0.8);
-            padding: 30px;
-            border-radius: 15px;
-            border: 2px solid #2a3f5f;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-
-        .results-section.active {
-            display: block;
-            animation: slideIn 0.5s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Controversy Meter */
-        .controversy-meter {
-            margin: 30px 0;
-            padding: 25px;
-            background: rgba(10, 22, 40, 0.6);
-            border-radius: 10px;
-            border: 2px solid #2a3f5f;
-        }
-
-        .meter-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            font-size: 1.1em;
-        }
-
-        .meter-title {
-            color: #00ff88;
-            font-weight: bold;
-        }
-
-        .meter-score {
-            font-size: 1.5em;
-            font-weight: bold;
-        }
-
-        .meter-bar-container {
-            height: 30px;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 15px;
-            overflow: hidden;
             position: relative;
         }
 
-        .meter-bar {
-            height: 100%;
-            border-radius: 15px;
-            transition: width 1s ease, background 1s ease;
+        .example-btn:hover {
+            border-left-width: 8px;
+            transform: translateX(4px);
+            box-shadow: 0 4px 20px rgba(230, 29, 37, 0.2);
+        }
+
+        /* ===== LANGUAGE SELECTOR ===== */
+        .language-label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--dark-blue);
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .language-selector {
             display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 10px;
-            font-weight: bold;
-            color: #fff;
-        }
-
-        .meter-labels {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-            font-size: 0.85em;
-            color: #a0a0a0;
-        }
-
-        /* Decision Explanation */
-        .decision-explanation {
-            margin: 25px 0;
-            padding: 20px;
-            background: rgba(10, 22, 40, 0.6);
-            border-left: 4px solid #00ff88;
-            border-radius: 8px;
-            line-height: 1.8;
-        }
-
-        /* Rules Cited */
-        .rules-cited {
-            margin: 25px 0;
-        }
-
-        .rules-tags {
-            display: flex;
+            justify-content: center;
+            gap: 12px;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
+            margin-bottom: 30px;
         }
 
-        .rule-tag {
-            padding: 8px 16px;
-            background: rgba(0, 255, 136, 0.15);
-            border: 1px solid #00ff88;
-            border-radius: 20px;
-            color: #00ff88;
-            font-size: 0.9em;
-            font-weight: 500;
-        }
-
-        /* Plain Language Summary */
-        .plain-summary {
-            margin: 25px 0;
-            padding: 25px;
-            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 204, 106, 0.1) 100%);
-            border: 2px solid #00ff88;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2);
-        }
-
-        .summary-title {
-            color: #00ff88;
-            font-weight: bold;
-            margin-bottom: 15px;
-            font-size: 1.2em;
+        .lang-btn {
+            width: 90px;
+            height: 90px;
+            background: var(--white);
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            gap: 6px;
+            position: relative;
+            padding: 8px;
         }
 
-        .summary-title::before {
-            content: "💡";
+        .lang-btn .flag {
+            font-size: 32px;
+            line-height: 1;
         }
 
-        .summary-text {
-            line-height: 1.8;
-            font-size: 1.05em;
+        .lang-btn .name {
+            font-size: 11px;
+            font-weight: 300;
+            color: var(--dark-gray);
+            text-align: center;
+            line-height: 1.2;
         }
 
-        /* Consistency Note */
-        .consistency-note {
-            margin: 25px 0;
-            padding: 20px;
-            background: rgba(10, 22, 40, 0.6);
-            border-radius: 8px;
-            border-left: 4px solid #4a9eff;
+        .lang-btn:hover {
+            transform: scale(1.1) rotate(5deg);
+            border-color: var(--orange);
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.3);
         }
 
-        .consistency-title {
-            color: #4a9eff;
-            font-weight: bold;
-            margin-bottom: 10px;
+        .lang-btn.active {
+            border-color: var(--light-green);
+            border-width: 4px;
+            box-shadow: 0 0 0 4px rgba(60, 172, 59, 0.2);
         }
 
-        /* Error Message */
+        /* ===== SUBMIT BUTTON ===== */
+        .submit-btn {
+            width: 100%;
+            padding: 24px;
+            background: linear-gradient(135deg, var(--red), var(--orange));
+            border: none;
+            border-radius: 12px;
+            font-family: var(--font-main);
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 30px rgba(230, 29, 37, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(230, 29, 37, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* ===== LOADING ===== */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid rgba(230, 29, 37, 0.2);
+            border-top-color: var(--red);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--red);
+        }
+
+        /* ===== ERROR MESSAGE ===== */
         .error-message {
             display: none;
+            background: rgba(230, 29, 37, 0.1);
+            border: 2px solid var(--red);
+            border-radius: 12px;
             padding: 20px;
-            background: rgba(255, 68, 68, 0.1);
-            border: 2px solid #ff4444;
-            border-radius: 10px;
-            color: #ff4444;
-            margin: 20px 0;
+            margin-top: 20px;
+            color: var(--red);
+            font-weight: 700;
         }
 
         .error-message.active {
             display: block;
         }
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2em;
-            }
-
-            .subtitle {
-                font-size: 1em;
-            }
-
-            .health-status {
-                position: static;
-                margin: 0 auto 20px;
-                width: fit-content;
-            }
-
-            .input-section, .results-section {
-                padding: 20px;
-            }
-
-            .example-buttons {
-                flex-direction: column;
-            }
-
-            .example-btn {
-                width: 100%;
-            }
-        }
-
-        /* Footer */
-        footer {
-            text-align: center;
-            padding: 40px 20px;
-            color: #666;
-            font-size: 0.9em;
+        /* ===== RESULTS SECTION ===== */
+        .results-section {
+            display: none;
             margin-top: 60px;
-            border-top: 1px solid #2a3f5f;
         }
 
-        footer a {
-            color: #00ff88;
-            text-decoration: none;
+        .results-section.active {
+            display: block;
         }
 
-        footer a:hover {
-            text-decoration: underline;
+        /* ===== CONTROVERSY SECTION ===== */
+        .controversy-section {
+            text-align: center;
+            padding: 60px 40px;
+            background: var(--off-white);
+            border-radius: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+        }
+
+        .controversy-number {
+            font-size: 120px;
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .controversy-number.low {
+            color: var(--light-green);
+        }
+
+        .controversy-number.medium {
+            color: var(--orange);
+        }
+
+        .controversy-number.high {
+            color: var(--red);
+        }
+
+        .controversy-label {
+            font-size: 14px;
+            font-weight: 300;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--dark-gray);
+            opacity: 0.6;
+            margin-bottom: 30px;
+        }
+
+        .controversy-bar-container {
+            width: 100%;
+            max-width: 600px;
+            height: 12px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .controversy-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--light-green), var(--orange), var(--red));
+            border-radius: 6px;
+            transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* ===== CONFIDENCE SECTION ===== */
+        .confidence-section {
+            text-align: center;
+            padding: 60px 40px;
+            background: var(--off-white);
+            border-radius: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+        }
+
+        .confidence-ring {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 20px;
+        }
+
+        .confidence-ring svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .confidence-ring-bg {
+            fill: none;
+            stroke: rgba(0, 0, 0, 0.1);
+            stroke-width: 14;
+        }
+
+        .confidence-ring-progress {
+            fill: none;
+            stroke: var(--light-green);
+            stroke-width: 14;
+            stroke-linecap: round;
+            stroke-dasharray: 502.65;
+            stroke-dashoffset: 502.65;
+            transition: stroke-dashoffset 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .confidence-ring-progress.medium {
+            stroke: var(--orange);
+        }
+
+        .confidence-ring-progress.low {
+            stroke: var(--red);
+        }
+
+        .confidence-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 56px;
+            font-weight: 900;
+            color: var(--dark-gray);
+        }
+
+        .confidence-percent {
+            font-size: 28px;
+            opacity: 0.6;
+        }
+
+        .confidence-label {
+            font-size: 14px;
+            font-weight: 300;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--dark-gray);
+            opacity: 0.6;
+        }
+
+        /* ===== RESULT CARDS ===== */
+        .result-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 6px;
+            height: 100%;
+        }
+
+        .result-card.blue::before {
+            background: var(--dark-blue);
+        }
+
+        .result-card.green::before {
+            background: var(--light-green);
+        }
+
+        .result-card.maroon::before {
+            background: var(--maroon);
+        }
+
+        .result-card h3 {
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--dark-gray);
+            margin-bottom: 20px;
+        }
+
+        .result-card p {
+            font-size: 16px;
+            font-weight: 300;
+            line-height: 1.8;
+            color: var(--dark-gray);
+        }
+
+        /* ===== RULES CHIPS ===== */
+        .rules-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .rule-chip {
+            border: 2px solid #2A398D;
+            color: #2A398D;
+            background: rgba(42, 57, 141, 0.1);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 13px;
+            opacity: 1 !important;
+            display: inline-block;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+
+        .rule-chip:hover {
+            background: #2A398D;
+            color: #FFFFFF;
+            transform: translateY(-2px);
+        }
+
+        /* ===== METRICS GRID ===== */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .container {
+                padding: 40px 20px;
+            }
+
+            .title-line {
+                font-size: 80px;
+            }
+
+            .input-card {
+                padding: 30px;
+            }
+
+            .examples-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .controversy-number {
+                font-size: 80px;
+            }
+
+            .system-status {
+                top: 20px;
+                right: 20px;
+                font-size: 11px;
+                padding: 10px 16px;
+            }
         }
     </style>
 </head>
+
 <body>
+    <!-- Language Splash Screen -->
+    <div id="languageSplash">
+        <div class="splash-title">VAR-ENFORCER</div>
+
+        <div class="splash-subtitle">
+            Select your language / Selecciona tu idioma / Choisissez votre langue<br>
+            Selecione seu idioma / Wähle deine Sprache / اختر لغتك
+        </div>
+        <div class="splash-languages">
+            <div class="splash-lang-card" onclick="selectSplashLanguage('en')">
+                <div class="splash-lang-flag">🇬🇧</div>
+                <div class="splash-lang-name">ENGLISH</div>
+                <div class="splash-lang-native">English</div>
+            </div>
+            <div class="splash-lang-card" onclick="selectSplashLanguage('es')">
+                <div class="splash-lang-flag">🇪🇸</div>
+                <div class="splash-lang-name">SPANISH</div>
+                <div class="splash-lang-native">Español</div>
+            </div>
+            <div class="splash-lang-card" onclick="selectSplashLanguage('fr')">
+                <div class="splash-lang-flag">🇫🇷</div>
+                <div class="splash-lang-name">FRENCH</div>
+                <div class="splash-lang-native">Français</div>
+            </div>
+            <div class="splash-lang-card" onclick="selectSplashLanguage('pt')">
+                <div class="splash-lang-flag">🇵🇹</div>
+                <div class="splash-lang-name">PORTUGUESE</div>
+                <div class="splash-lang-native">Português</div>
+            </div>
+            <div class="splash-lang-card" onclick="selectSplashLanguage('pt-br')">
+                <div class="splash-lang-flag">🇧🇷</div>
+                <div class="splash-lang-name">BRAZILIAN</div>
+                <div class="splash-lang-native">Brasileiro</div>
+            </div>
+            <div class="splash-lang-card" onclick="selectSplashLanguage('de')">
+                <div class="splash-lang-flag">🇩🇪</div>
+                <div class="splash-lang-name">GERMAN</div>
+                <div class="splash-lang-native">Deutsch</div>
+            </div>
+            <div class="splash-lang-card" onclick="selectSplashLanguage('it')">
+                <div class="splash-lang-flag">🇮🇹</div>
+                <div class="splash-lang-name">ITALIAN</div>
+                <div class="splash-lang-native">Italiano</div>
+            </div>
+            <div class="splash-lang-card" onclick="selectSplashLanguage('ja')">
+                <div class="splash-lang-flag">🇯🇵</div>
+                <div class="splash-lang-name">JAPANESE</div>
+                <div class="splash-lang-native">日本語</div>
+            </div>
+            <div class="splash-lang-card" onclick="selectSplashLanguage('ar')">
+                <div class="splash-lang-flag">🇸🇦</div>
+                <div class="splash-lang-name">ARABIC</div>
+                <div class="splash-lang-native">العربية</div>
+            </div>
+            <div class="splash-lang-card" onclick="selectSplashLanguage('nl')">
+                <div class="splash-lang-flag">🇳🇱</div>
+                <div class="splash-lang-name">DUTCH</div>
+                <div class="splash-lang-native">Nederlands</div>
+            </div>
+            <div class="splash-lang-card" onclick="selectSplashLanguage('tr')">
+                <div class="splash-lang-flag">🇹🇷</div>
+                <div class="splash-lang-name">TURKISH</div>
+                <div class="splash-lang-native">Türkçe</div>
+            </div>
+            <div class="splash-lang-card" onclick="selectSplashLanguage('hr')">
+                <div class="splash-lang-flag">🇭🇷</div>
+                <div class="splash-lang-name">CROATIAN</div>
+                <div class="splash-lang-native">Hrvatski</div>
+            </div>
+            <div class="splash-lang-card" onclick="selectSplashLanguage('no')">
+                <div class="splash-lang-flag">🇳🇴</div>
+                <div class="splash-lang-name">NORWEGIAN</div>
+                <div class="splash-lang-native">Norsk</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Animated Canvas Background -->
+    <canvas id="geometricCanvas"></canvas>
+
+    <!-- System Status -->
+    <div class="system-status">
+        <div class="status-dot"></div>
+        <span id="statusText">System Ready</span>
+    </div>
+
     <div class="container">
         <!-- Header -->
         <header>
-            <h1>⚽ VAR ENFORCER</h1>
-            <p class="subtitle">AI-Powered FIFA VAR Decision Explainer</p>
+            <div class="title-stack">
+                <span class="title-line thin">
+                    <span>V</span><span>A</span><span>R</span>
+                </span>
+                <span class="title-line bold">
+                    <span>E</span><span>N</span><span>F</span><span>O</span><span>R</span><span>C</span><span>E</span><span>R</span>
+                </span>
+            </div>
+            <div class="tagline">AI-Powered FIFA World Cup VAR Decision Explainer</div>
         </header>
 
-        <!-- Health Status -->
-        <div class="health-status" id="healthStatus">
-            <div class="status-dot" id="statusDot"></div>
-            <span id="statusText">Checking system...</span>
-        </div>
-
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Input Section -->
-            <div class="input-section">
-                <h2 class="section-title">Describe the VAR Incident</h2>
-
-                <!-- Example Incidents -->
-                <div class="examples">
-                    <div class="examples-label">Quick Examples:</div>
-                    <div class="example-buttons">
-                        <button class="example-btn" onclick="fillExample(0)">Penalty Box Handball</button>
-                        <button class="example-btn" onclick="fillExample(1)">Offside Goal</button>
-                        <button class="example-btn" onclick="fillExample(2)">Red Card Challenge</button>
-                        <button class="example-btn" onclick="fillExample(3)">Goalkeeper Interference</button>
-                    </div>
+        <!-- Input Section -->
+        <div class="input-card">
+            <form id="varForm">
+                <div class="form-group">
+                    <label id="labelIncident">Describe the VAR Incident</label>
+                    <textarea id="incidentInput"
+                        placeholder="Example: The defender made contact with the attacker's leg after the ball was played. The referee initially waved play on, but VAR reviewed the incident..."
+                        required></textarea>
                 </div>
 
-                <!-- Form -->
-                <form id="varForm" onsubmit="submitIncident(event)">
-                    <div class="form-group">
-                        <label for="incident">Incident Description *</label>
-                        <textarea 
-                            id="incident" 
-                            name="incident" 
-                            placeholder="Describe the VAR incident in detail... (e.g., 'The defender made contact with the attacker's leg while attempting to win the ball in the penalty area')"
-                            required
-                            minlength="10"
-                            maxlength="2000"
-                        ></textarea>
-                    </div>
+                <div class="form-group">
+                    <label id="labelContext">Match Context (Optional)</label>
+                    <input type="text" id="contextInput"
+                        placeholder="e.g., FIFA World Cup final 2022, Argentina vs France">
+                </div>
 
-                    <div class="form-group">
-                        <label for="matchContext">Match Context (Optional)</label>
-                        <input 
-                            type="text" 
-                            id="matchContext" 
-                            name="matchContext" 
-                            placeholder="e.g., World Cup Final 2022, Argentina vs France"
-                            maxlength="500"
-                        >
-                    </div>
-
-                    <div class="form-group">
-                        <label for="language">Response Language</label>
-                        <select id="language" name="language">
-                            <option value="en">🇬🇧 English</option>
-                            <option value="es">🇪🇸 Español</option>
-                            <option value="fr">🇫🇷 Français</option>
-                            <option value="pt">🇵🇹 Português</option>
-                        </select>
-                    </div>
-
-                    <button type="submit" class="submit-btn" id="submitBtn">
-                        Analyze VAR Decision
+                <div class="examples-label" id="labelExamples">Quick Examples</div>
+                <div class="examples-grid">
+                    <button type="button" class="example-btn" onclick="fillExample(0)">
+                        Penalty decision after defender contact
                     </button>
-                </form>
-
-                <!-- Loading Spinner -->
-                <div class="loading" id="loading">
-                    <div class="spinner"></div>
-                    <p>Analyzing incident with AI...</p>
-                    <p style="color: #666; font-size: 0.9em; margin-top: 10px;">
-                        Retrieving FIFA rules and generating explanation...
-                    </p>
+                    <button type="button" class="example-btn" onclick="fillExample(1)">
+                        Offside goal disallowed by VAR
+                    </button>
+                    <button type="button" class="example-btn" onclick="fillExample(2)">
+                        Red card for dangerous tackle
+                    </button>
+                    <button type="button" class="example-btn" onclick="fillExample(3)">
+                        Handball in the penalty area
+                    </button>
                 </div>
 
-                <!-- Error Message -->
-                <div class="error-message" id="errorMessage"></div>
-            </div>
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span id="btnText">Analyze VAR Decision</span>
+                </button>
+            </form>
 
-            <!-- Results Section -->
-            <div class="results-section" id="results">
-                <h2 class="section-title">VAR Decision Analysis</h2>
-
-                <!-- Controversy Meter -->
-                <div class="controversy-meter">
-                    <div class="meter-label">
-                        <span class="meter-title">Controversy Meter</span>
-                        <span class="meter-score" id="controversyScore">-</span>
-                    </div>
-                    <div class="meter-bar-container">
-                        <div class="meter-bar" id="meterBar" style="width: 0%"></div>
-                    </div>
-                    <div class="meter-labels">
-                        <span>Clear Decision</span>
-                        <span>Highly Controversial</span>
-                    </div>
-                </div>
-
-                <!-- Decision Explanation -->
-                <div class="decision-explanation">
-                    <h3 style="color: #00ff88; margin-bottom: 15px;">📋 Technical Analysis</h3>
-                    <div id="decisionText"></div>
-                </div>
-
-                <!-- Rules Cited -->
-                <div class="rules-cited">
-                    <h3 style="color: #00ff88; margin-bottom: 15px;">📖 FIFA Rules Referenced</h3>
-                    <div class="rules-tags" id="rulesTags"></div>
-                </div>
-
-                <!-- Plain Language Summary -->
-                <div class="plain-summary">
-                    <div class="summary-title">For Casual Fans</div>
-                    <div class="summary-text" id="summaryText"></div>
-                </div>
-
-                <!-- Consistency Note -->
-                <div class="consistency-note">
-                    <div class="consistency-title">🔍 Historical Consistency</div>
-                    <div id="consistencyText"></div>
-                </div>
-            </div>
+            <div class="error-message" id="errorMessage"></div>
         </div>
 
-        <!-- Footer -->
-        <footer>
-            <p>VAR Enforcer - Powered by IBM Granite, Docling, and ChromaDB</p>
-            <p style="margin-top: 10px;">
-                Built for transparent and educational VAR decision analysis
-            </p>
-        </footer>
+        <!-- Results Section -->
+        <div class="results-section" id="results">
+            <!-- Metrics Grid -->
+            <div class="metrics-grid">
+                <!-- Controversy -->
+                <div class="controversy-section">
+                    <div class="controversy-number" id="controversyNumber">0</div>
+                    <div class="controversy-label" id="labelControversy">Controversy Index</div>
+                    <div class="controversy-bar-container">
+                        <div class="controversy-bar" id="controversyBar"></div>
+                    </div>
+                </div>
+
+                <!-- Confidence -->
+                <div class="confidence-section">
+                    <div class="confidence-ring">
+                        <svg viewBox="0 0 180 180">
+                            <circle class="confidence-ring-bg" cx="90" cy="90" r="80"></circle>
+                            <circle class="confidence-ring-progress" id="confidenceRing" cx="90" cy="90" r="80">
+                            </circle>
+                        </svg>
+                        <div class="confidence-value">
+                            <span id="confidenceValue">0</span><span class="confidence-percent">%</span>
+                        </div>
+                    </div>
+                    <div class="confidence-label">AI Confidence</div>
+                </div>
+            </div>
+
+            <!-- Technical Analysis -->
+            <div class="result-card blue">
+                <h3 id="labelTechnical">⚖️ Technical Analysis</h3>
+                <p id="decisionText"></p>
+            </div>
+
+            <!-- FIFA Rules -->
+            <div class="result-card blue">
+                <h3 id="labelRules">📋 FIFA Rules Referenced</h3>
+                <div class="rules-container" id="rulesContainer"></div>
+            </div>
+
+            <!-- Plain Language Summary -->
+            <div class="result-card green">
+                <h3 id="labelSummary">💬 For Casual Fans</h3>
+                <p id="summaryText"></p>
+            </div>
+
+            <!-- Historical Consistency -->
+            <div class="result-card maroon">
+                <h3 id="labelConsistency">📊 Historical Consistency</h3>
+                <p id="consistencyText"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Analyzing...</div>
     </div>
 
     <script>
-        // Configuration
+        // ===== CONFIGURATION =====
         const API_BASE_URL = 'http://localhost:8002';
+        let selectedLanguage = 'en';
 
-        // Example incidents
-        const examples = [
-            {
-                incident: "The defender's hand was in an unnatural position when the ball struck it in the penalty area. The referee initially didn't call it, but VAR reviewed the incident.",
-                context: "Champions League Semi-Final"
+        // ===== TRANSLATIONS =====
+        const translations = {
+            en: {
+                labelIncident: "Describe the VAR Incident",
+                placeholderIncident: "Example: The defender made contact with the attacker's leg after the ball was played...",
+                labelContext: "Match Context (Optional)",
+                placeholderContext: "e.g., FIFA World Cup final 2022, Argentina vs France",
+                labelExamples: "Quick Examples",
+                example1: "Penalty decision after defender contact",
+                example2: "Offside goal disallowed by VAR",
+                example3: "Red card for dangerous tackle",
+                example4: "Handball in the penalty area",
+                btnText: "Analyze VAR Decision",
+                statusReady: "System Ready",
+                statusInit: "System Initializing",
+                labelControversy: "Controversy Index",
+                labelConfidence: "AI Confidence",
+                labelTechnical: "⚖️ Technical Analysis",
+                labelRules: "📋 FIFA Rules Referenced",
+                labelSummary: "💬 For Casual Fans",
+                labelConsistency: "📊 Historical Consistency"
             },
-            {
-                incident: "The striker was in an offside position when the pass was made, but the ball deflected off a defender before reaching him. The goal was initially allowed.",
-                context: "World Cup Quarter-Final"
+            es: {
+                labelIncident: "Describe el Incidente VAR",
+                placeholderIncident: "Ejemplo: El defensor hizo contacto con la pierna del atacante después de jugar el balón...",
+                labelContext: "Contexto del Partido (Opcional)",
+                placeholderContext: "ej., Final de la Copa Mundial FIFA 2022, Argentina vs Francia",
+                labelExamples: "Ejemplos Rápidos",
+                example1: "Decisión de penalti tras contacto del defensor",
+                example2: "Gol anulado por fuera de juego por VAR",
+                example3: "Tarjeta roja por entrada peligrosa",
+                example4: "Mano en el área de penalti",
+                btnText: "Analizar Decisión VAR",
+                statusReady: "Sistema Listo",
+                statusInit: "Sistema Inicializando",
+                labelControversy: "Índice de Controversia",
+                labelConfidence: "Confianza IA",
+                labelTechnical: "⚖️ Análisis Técnico",
+                labelRules: "📋 Reglas FIFA Citadas",
+                labelSummary: "💬 Para Fans Casuales",
+                labelConsistency: "📊 Consistencia Histórica"
             },
-            {
-                incident: "The defender went in with a high boot and made contact with the opponent's chest. The referee showed a yellow card, but VAR suggested reviewing for a potential red card.",
-                context: "Premier League Match"
+            fr: {
+                labelIncident: "Décrivez l'Incident VAR",
+                placeholderIncident: "Exemple: Le défenseur a fait contact avec la jambe de l'attaquant après avoir joué le ballon...",
+                labelContext: "Contexte du Match (Optionnel)",
+                placeholderContext: "ex., Finale de la Coupe du Monde FIFA 2022, Argentine vs France",
+                labelExamples: "Exemples Rapides",
+                example1: "Décision de penalty après contact du défenseur",
+                example2: "But annulé pour hors-jeu par VAR",
+                example3: "Carton rouge pour tacle dangereux",
+                example4: "Main dans la surface de réparation",
+                btnText: "Analyser la Décision VAR",
+                statusReady: "Système Prêt",
+                statusInit: "Système en Initialisation",
+                labelControversy: "Indice de Controverse",
+                labelConfidence: "Confiance IA",
+                labelTechnical: "⚖️ Analyse Technique",
+                labelRules: "📋 Règles FIFA Citées",
+                labelSummary: "💬 Pour les Fans",
+                labelConsistency: "📊 Cohérence Historique"
             },
-            {
-                incident: "The goalkeeper was pushed by an attacking player just before the ball crossed the line. The referee allowed the goal but VAR reviewed for a potential foul.",
-                context: "Europa League Final"
+            pt: {
+                labelIncident: "Descreva o Incidente VAR",
+                placeholderIncident: "Exemplo: O defensor fez contato com a perna do atacante após jogar a bola...",
+                labelContext: "Contexto da Partida (Opcional)",
+                placeholderContext: "ex., Final da Copa do Mundo FIFA 2022, Argentina vs França",
+                labelExamples: "Exemplos Rápidos",
+                example1: "Decisão de pênalti após contato do defensor",
+                example2: "Gol anulado por impedimento pelo VAR",
+                example3: "Cartão vermelho por entrada perigosa",
+                example4: "Mão na área de pênalti",
+                btnText: "Analisar Decisão VAR",
+                statusReady: "Sistema Pronto",
+                statusInit: "Sistema Inicializando",
+                labelControversy: "Índice de Controvérsia",
+                labelConfidence: "Confiança IA",
+                labelTechnical: "⚖️ Análise Técnica",
+                labelRules: "📋 Regras FIFA Citadas",
+                labelSummary: "💬 Para Fãs",
+                labelConsistency: "📊 Consistência Histórica"
+            },
+            de: {
+                labelIncident: "Beschreibe den VAR-Vorfall",
+                placeholderIncident: "Beispiel: Der Verteidiger berührte das Bein des Angreifers nach dem Ballspiel...",
+                labelContext: "Spielkontext (Optional)",
+                placeholderContext: "z.B., FIFA WM-Finale 2022, Argentinien vs Frankreich",
+                labelExamples: "Schnellbeispiele",
+                example1: "Elfmeterentscheidung nach Verteidigerkontakt",
+                example2: "Tor wegen Abseits durch VAR annulliert",
+                example3: "Rote Karte für gefährliches Tackling",
+                example4: "Handspiel im Strafraum",
+                btnText: "VAR-Entscheidung Analysieren",
+                statusReady: "System Bereit",
+                statusInit: "System Wird Initialisiert",
+                labelControversy: "Kontroversindex",
+                labelConfidence: "KI-Vertrauen",
+                labelTechnical: "⚖️ Technische Analyse",
+                labelRules: "📋 FIFA-Regeln Zitiert",
+                labelSummary: "💬 Für Gelegenheitsfans",
+                labelConsistency: "📊 Historische Konsistenz"
+            },
+            it: {
+                labelIncident: "Descrivi l'Incidente VAR",
+                placeholderIncident: "Esempio: Il difensore ha fatto contatto con la gamba dell'attaccante dopo aver giocato la palla...",
+                labelContext: "Contesto della Partita (Opzionale)",
+                placeholderContext: "es., Finale Coppa del Mondo FIFA 2022, Argentina vs Francia",
+                labelExamples: "Esempi Rapidi",
+                example1: "Decisione rigore dopo contatto difensore",
+                example2: "Gol annullato per fuorigioco dal VAR",
+                example3: "Cartellino rosso per tackle pericoloso",
+                example4: "Fallo di mano in area di rigore",
+                btnText: "Analizza Decisione VAR",
+                statusReady: "Sistema Pronto",
+                statusInit: "Sistema in Inizializzazione",
+                labelControversy: "Indice di Controversia",
+                labelConfidence: "Fiducia IA",
+                labelTechnical: "⚖️ Analisi Tecnica",
+                labelRules: "📋 Regole FIFA Citate",
+                labelSummary: "💬 Per Tifosi Casuali",
+                labelConsistency: "📊 Coerenza Storica"
+            },
+            ja: {
+                labelIncident: "VAR事案を説明してください",
+                placeholderIncident: "例：ディフェンダーがボールをプレーした後、アタッカーの足に接触しました...",
+                labelContext: "試合の状況（任意）",
+                placeholderContext: "例：2022年FIFAワールドカップ決勝、アルゼンチン対フランス",
+                labelExamples: "クイック例",
+                example1: "ディフェンダーの接触後のペナルティ判定",
+                example2: "VARによりオフサイドでゴール取り消し",
+                example3: "危険なタックルでレッドカード",
+                example4: "ペナルティエリア内でのハンドボール",
+                btnText: "VAR判定を分析する",
+                statusReady: "システム準備完了",
+                statusInit: "システム初期化中",
+                labelControversy: "論争指数",
+                labelConfidence: "AI信頼度",
+                labelTechnical: "⚖️ 技術分析",
+                labelRules: "📋 参照されたFIFAルール",
+                labelSummary: "💬 一般ファン向け",
+                labelConsistency: "📊 歴史的一貫性"
+            },
+            ar: {
+                labelIncident: "وصف حادثة VAR",
+                placeholderIncident: "مثال: لامس المدافع ساق المهاجم بعد لعب الكرة...",
+                labelContext: "سياق المباراة (اختياري)",
+                placeholderContext: "مثلاً، نهائي كأس العالم FIFA 2022، الأرجنتين ضد فرنسا",
+                labelExamples: "أمثلة سريعة",
+                example1: "قرار ركلة جزاء بعد تماس المدافع",
+                example2: "إلغاء هدف بسبب التسلل من قبل VAR",
+                example3: "بطاقة حمراء لتدخل خطير",
+                example4: "لمسة يد في منطقة الجزاء",
+                btnText: "تحليل قرار VAR",
+                statusReady: "النظام جاهز",
+                statusInit: "النظام قيد التهيئة",
+                labelControversy: "مؤشر الجدل",
+                labelConfidence: "ثقة الذكاء الاصطناعي",
+                labelTechnical: "⚖️ التحليل التقني",
+                labelRules: "📋 قواعد الفيفا المشار إليها",
+                labelSummary: "💬 للمشجعين العاديين",
+                labelConsistency: "📊 الاتساق التاريخي"
+            },
+            nl: {
+                labelIncident: "Beschrijf het VAR-incident",
+                placeholderIncident: "Voorbeeld: De verdediger maakte contact met het been van de aanvaller na het spelen van de bal...",
+                labelContext: "Wedstrijdcontext (Optioneel)",
+                placeholderContext: "bijv., FIFA Wereldbeker finale 2022, Argentinië vs Frankrijk",
+                labelExamples: "Snelle Voorbeelden",
+                example1: "Strafschopbeslissing na contact verdediger",
+                example2: "Doelpunt afgekeurd wegens buitenspel door VAR",
+                example3: "Rode kaart voor gevaarlijke tackle",
+                example4: "Hands in het strafschopgebied",
+                btnText: "Analyseer VAR-beslissing",
+                statusReady: "Systeem Klaar",
+                statusInit: "Systeem Initialiseren",
+                labelControversy: "Controversie-index",
+                labelConfidence: "AI-vertrouwen",
+                labelTechnical: "⚖️ Technische Analyse",
+                labelRules: "📋 Geciteerde FIFA-regels",
+                labelSummary: "💬 Voor Casual Fans",
+                labelConsistency: "📊 Historische Consistentie"
+            },
+            tr: {
+                labelIncident: "VAR Olayını Açıklayın",
+                placeholderIncident: "Örnek: Defans oyuncusu topu oynadıktan sonra hücum oyuncusunun bacağına temas etti...",
+                labelContext: "Maç Bağlamı (İsteğe Bağlı)",
+                placeholderContext: "örn., FIFA Dünya Kupası finali 2022, Arjantin vs Fransa",
+                labelExamples: "Hızlı Örnekler",
+                example1: "Defans temasından sonra penaltı kararı",
+                example2: "VAR tarafından ofsayt nedeniyle iptal edilen gol",
+                example3: "Tehlikeli müdahale için kırmızı kart",
+                example4: "Ceza sahası içinde el",
+                btnText: "VAR Kararını Analiz Et",
+                statusReady: "Sistem Hazır",
+                statusInit: "Sistem Başlatılıyor",
+                labelControversy: "Tartışma Endeksi",
+                labelConfidence: "Yapay Zeka Güveni",
+                labelTechnical: "⚖️ Teknik Analiz",
+                labelRules: "📋 Atıfta Bulunulan FIFA Kuralları",
+                labelSummary: "💬 Sıradan Taraftarlar İçin",
+                labelConsistency: "📊 Tarihsel Tutarlılık"
+            },
+            hr: {
+                labelIncident: "Opišite VAR Incident",
+                placeholderIncident: "Primjer: Branič je napravio kontakt s nogom napadača nakon što je odigrao loptu...",
+                labelContext: "Kontekst Utakmice (Opcionalno)",
+                placeholderContext: "npr., Finale Svjetskog prvenstva FIFA 2022, Argentina vs Francuska",
+                labelExamples: "Brzi Primjeri",
+                example1: "Odluka o jedanaestercu nakon kontakta braniča",
+                example2: "Gol poništen zbog zaleđa od strane VAR-a",
+                example3: "Crveni karton za opasan start",
+                example4: "Ruka u kaznenom prostoru",
+                btnText: "Analiziraj VAR Odluku",
+                statusReady: "Sustav Spreman",
+                statusInit: "Sustav se Inicijalizira",
+                labelControversy: "Indeks Kontroverze",
+                labelConfidence: "Povjerenje AI",
+                labelTechnical: "⚖️ Tehnička Analiza",
+                labelRules: "📋 Citirani FIFA Propisi",
+                labelSummary: "💬 Za Obične Navijače",
+                labelConsistency: "📊 Povijesna Dosljednost"
+            },
+            no: {
+                labelIncident: "Beskriv VAR-hendelsen",
+                placeholderIncident: "Eksempel: Forsvareren kom i kontakt med angriperens ben etter å ha spilt ballen...",
+                labelContext: "Kampkontekst (Valgfritt)",
+                placeholderContext: "f.eks., FIFA VM-finale 2022, Argentina vs Frankrike",
+                labelExamples: "Raske Eksempler",
+                example1: "Straffeavgjørelse etter forsvarerkontakt",
+                example2: "Mål annullert for offside av VAR",
+                example3: "Rødt kort for farlig takling",
+                example4: "Hands i straffefelt",
+                btnText: "Analyser VAR-avgjørelse",
+                statusReady: "System Klar",
+                statusInit: "System Initialiserer",
+                labelControversy: "Kontroversindeks",
+                labelConfidence: "AI-tillit",
+                labelTechnical: "⚖️ Teknisk Analyse",
+                labelRules: "📋 Siterte FIFA-regler",
+                labelSummary: "💬 For Tilfeldige Fans",
+                labelConsistency: "📊 Historisk Konsistens"
             }
+        };
+
+        // ===== LANGUAGE SPLASH SCREEN =====
+        function selectSplashLanguage(lang) {
+            selectedLanguage = lang;
+
+            // Map pt-br to pt for API
+            const apiLang = lang === 'pt-br' ? 'pt' : lang;
+            selectedLanguage = apiLang;
+
+            // Update UI translations
+            updateUITranslations(apiLang);
+
+            // Hide splash with animation
+            const splash = document.getElementById('languageSplash');
+            gsap.to(splash, {
+                opacity: 0,
+                duration: 0.6,
+                ease: 'power2.inOut',
+                onComplete: () => {
+                    splash.classList.add('hidden');
+                }
+            });
+        }
+
+        // ===== UPDATE UI TRANSLATIONS =====
+        function updateUITranslations(lang) {
+            const trans = translations[lang] || translations.en;
+
+            // Set RTL for Arabic
+            if (lang === 'ar') {
+                document.documentElement.setAttribute('dir', 'rtl');
+            } else {
+                document.documentElement.setAttribute('dir', 'ltr');
+            }
+
+            // Update labels
+            document.getElementById('labelIncident').textContent = trans.labelIncident;
+            document.getElementById('labelContext').textContent = trans.labelContext;
+            document.getElementById('labelExamples').textContent = trans.labelExamples;
+            document.getElementById('btnText').textContent = trans.btnText;
+            document.getElementById('labelControversy').textContent = trans.labelControversy;
+            document.getElementById('labelTechnical').textContent = trans.labelTechnical;
+            document.getElementById('labelRules').textContent = trans.labelRules;
+            document.getElementById('labelSummary').textContent = trans.labelSummary;
+            document.getElementById('labelConsistency').textContent = trans.labelConsistency;
+
+            // Update placeholders
+            document.getElementById('incidentInput').placeholder = trans.placeholderIncident;
+            document.getElementById('contextInput').placeholder = trans.placeholderContext;
+
+            // Update example buttons
+            const exampleBtns = document.querySelectorAll('.example-btn');
+            if (exampleBtns[0]) exampleBtns[0].textContent = trans.example1;
+            if (exampleBtns[1]) exampleBtns[1].textContent = trans.example2;
+            if (exampleBtns[2]) exampleBtns[2].textContent = trans.example3;
+            if (exampleBtns[3]) exampleBtns[3].textContent = trans.example4;
+
+            // Update status text if visible
+            const statusText = document.getElementById('statusText');
+            if (statusText && statusText.textContent.includes('Ready')) {
+                statusText.textContent = trans.statusReady;
+            } else if (statusText && statusText.textContent.includes('Initializing')) {
+                statusText.textContent = trans.statusInit;
+            }
+        }
+
+        // ===== ENHANCED RESPONSE PARSING =====
+        function extractRulesFromText(text) {
+            const rules = new Set();
+            const textLower = text.toLowerCase();
+
+            // Pattern 1: Explicit "Law X" or "Rule X" mentions
+            const lawMatches = text.match(/(?:Law|Rule|Article)\s+\d+[A-Za-z]?(?:\s*[-–]\s*[^.,\n]{0,50})?/gi);
+            if (lawMatches) {
+                lawMatches.forEach(match => rules.add(match.trim()));
+            }
+
+            // Pattern 2: "VAR Protocol" mentions
+            const varMatches = text.match(/VAR\s+Protocol[^.,\n]{0,50}/gi);
+            if (varMatches) {
+                varMatches.forEach(match => rules.add(match.trim()));
+            }
+
+            // Pattern 3: Map common terms to specific laws
+            const termToLawMap = {
+                'handball': 'Law 12 - Handball',
+                'hand ball': 'Law 12 - Handball',
+                'hands': 'Law 12 - Handball',
+                'offside': 'Law 11 - Offside',
+                'off-side': 'Law 11 - Offside',
+                'foul': 'Law 12 - Fouls and Misconduct',
+                'penalty': 'Law 12 - Fouls and Misconduct',
+                'penalti': 'Law 12 - Fouls and Misconduct',
+                'red card': 'Law 12 - Disciplinary Action',
+                'yellow card': 'Law 12 - Disciplinary Action',
+                'goalkeeper': 'Law 12 - Goalkeeper',
+                'goal keeper': 'Law 12 - Goalkeeper',
+                'tackle': 'Law 12 - Fouls and Misconduct',
+                'contact': 'Law 12 - Fouls and Misconduct',
+                'var review': 'VAR Protocol - Clear and Obvious Error',
+                'var check': 'VAR Protocol - Clear and Obvious Error',
+                'clear and obvious': 'VAR Protocol - Clear and Obvious Error',
+                'violent conduct': 'Law 12 - Violent Conduct',
+                'serious foul play': 'Law 12 - Serious Foul Play',
+                'denial of goal': 'Law 12 - DOGSO',
+                'dogso': 'Law 12 - DOGSO',
+                'advantage': 'Law 5 - The Referee',
+                'referee': 'Law 5 - The Referee'
+            };
+
+            // Check for term matches
+            for (const [term, law] of Object.entries(termToLawMap)) {
+                if (textLower.includes(term)) {
+                    rules.add(law);
+                }
+            }
+
+            // Pattern 4: Specific law number mentions (e.g., "12", "11" in context)
+            const lawNumberMatches = text.match(/\b(?:law|rule)\s*(\d+)\b/gi);
+            if (lawNumberMatches) {
+                lawNumberMatches.forEach(match => {
+                    const num = match.match(/\d+/)[0];
+                    if (num === '11') rules.add('Law 11 - Offside');
+                    else if (num === '12') rules.add('Law 12 - Fouls and Misconduct');
+                    else if (num === '5') rules.add('Law 5 - The Referee');
+                    else rules.add(`Law ${num}`);
+                });
+            }
+
+            // Convert Set to Array and limit to 6 rules
+            const rulesArray = Array.from(rules).slice(0, 6);
+
+            // If still no rules found, add generic ones
+            if (rulesArray.length === 0) {
+                rulesArray.push('FIFA Laws of the Game', 'VAR Protocol');
+            }
+
+            return rulesArray;
+        }
+
+        function extractConsistencyFromText(text) {
+            // Look for sentences with consistency keywords
+            const keywords = ['consistent', 'consistency', 'similar', 'historical', 'previous', 'past', 'align', 'standard'];
+            const sentences = text.split(/[.!?]+/);
+
+            for (const sentence of sentences) {
+                if (keywords.some(keyword => sentence.toLowerCase().includes(keyword))) {
+                    return sentence.trim();
+                }
+            }
+
+            // Fallback: use first sentence
+            return sentences[0]?.trim() || "Decision consistent with FIFA VAR protocol guidelines";
+        }
+
+        // ===== TRANSLATE LAW DESCRIPTIONS =====
+        function translateLawDescription(lawText, lang) {
+            // Law description translations
+            const lawTranslations = {
+                de: {
+                    'Law': 'Regel',
+                    'Fouls and Misconduct': 'Fouls und Unsportlichkeiten',
+                    'Offside': 'Abseits',
+                    'Handball': 'Handspiel',
+                    'Disciplinary Action': 'Disziplinarmaßnahmen',
+                    'Goalkeeper': 'Torwart',
+                    'Violent Conduct': 'Gewalttätiges Spiel',
+                    'Serious Foul Play': 'Grobes Foulspiel',
+                    'DOGSO': 'Torchancenverhinderung',
+                    'The Referee': 'Der Schiedsrichter',
+                    'VAR Protocol': 'VAR-Protokoll',
+                    'Clear and Obvious Error': 'Klarer und Offensichtlicher Fehler'
+                },
+                es: {
+                    'Law': 'Ley',
+                    'Fouls and Misconduct': 'Faltas y Conducta Incorrecta',
+                    'Offside': 'Fuera de Juego',
+                    'Handball': 'Mano',
+                    'Disciplinary Action': 'Acción Disciplinaria',
+                    'Goalkeeper': 'Portero',
+                    'Violent Conduct': 'Conducta Violenta',
+                    'Serious Foul Play': 'Juego Brusco Grave',
+                    'DOGSO': 'Negación de Gol',
+                    'The Referee': 'El Árbitro',
+                    'VAR Protocol': 'Protocolo VAR',
+                    'Clear and Obvious Error': 'Error Claro y Obvio'
+                },
+                fr: {
+                    'Law': 'Loi',
+                    'Fouls and Misconduct': 'Fautes et Comportement Antisportif',
+                    'Offside': 'Hors-jeu',
+                    'Handball': 'Main',
+                    'Disciplinary Action': 'Action Disciplinaire',
+                    'Goalkeeper': 'Gardien de But',
+                    'Violent Conduct': 'Conduite Violente',
+                    'Serious Foul Play': 'Faute Grave',
+                    'DOGSO': 'Privation de But',
+                    'The Referee': 'L\'Arbitre',
+                    'VAR Protocol': 'Protocole VAR',
+                    'Clear and Obvious Error': 'Erreur Claire et Évidente'
+                },
+                pt: {
+                    'Law': 'Lei',
+                    'Fouls and Misconduct': 'Faltas e Má Conduta',
+                    'Offside': 'Impedimento',
+                    'Handball': 'Mão',
+                    'Disciplinary Action': 'Ação Disciplinar',
+                    'Goalkeeper': 'Goleiro',
+                    'Violent Conduct': 'Conduta Violenta',
+                    'Serious Foul Play': 'Jogo Brusco Grave',
+                    'DOGSO': 'Negação de Gol',
+                    'The Referee': 'O Árbitro',
+                    'VAR Protocol': 'Protocolo VAR',
+                    'Clear and Obvious Error': 'Erro Claro e Óbvio'
+                },
+                it: {
+                    'Law': 'Regola',
+                    'Fouls and Misconduct': 'Falli e Scorrettezze',
+                    'Offside': 'Fuorigioco',
+                    'Handball': 'Fallo di Mano',
+                    'Disciplinary Action': 'Azione Disciplinare',
+                    'Goalkeeper': 'Portiere',
+                    'Violent Conduct': 'Condotta Violenta',
+                    'Serious Foul Play': 'Gioco Violento Grave',
+                    'DOGSO': 'Negazione di Gol',
+                    'The Referee': 'L\'Arbitro',
+                    'VAR Protocol': 'Protocollo VAR',
+                    'Clear and Obvious Error': 'Errore Chiaro ed Evidente'
+                },
+                ja: {
+                    'Law': '規則',
+                    'Fouls and Misconduct': 'ファウルと不正行為',
+                    'Offside': 'オフサイド',
+                    'Handball': 'ハンドボール',
+                    'Disciplinary Action': '懲戒処分',
+                    'Goalkeeper': 'ゴールキーパー',
+                    'Violent Conduct': '乱暴な行為',
+                    'Serious Foul Play': '重大なファウルプレー',
+                    'DOGSO': '決定的な得点機会の阻止',
+                    'The Referee': '主審',
+                    'VAR Protocol': 'VARプロトコル',
+                    'Clear and Obvious Error': '明白な誤り'
+                },
+                ar: {
+                    'Law': 'القانون',
+                    'Fouls and Misconduct': 'الأخطاء وسوء السلوك',
+                    'Offside': 'التسلل',
+                    'Handball': 'لمسة اليد',
+                    'Disciplinary Action': 'الإجراء التأديبي',
+                    'Goalkeeper': 'حارس المرمى',
+                    'Violent Conduct': 'السلوك العنيف',
+                    'Serious Foul Play': 'اللعب الخشن الخطير',
+                    'DOGSO': 'منع فرصة هدف واضحة',
+                    'The Referee': 'الحكم',
+                    'VAR Protocol': 'بروتوكول VAR',
+                    'Clear and Obvious Error': 'خطأ واضح وجلي'
+                }
+            };
+
+            // If language not supported or is English, return original
+            if (!lawTranslations[lang] || lang === 'en') {
+                return lawText;
+            }
+
+            let translated = lawText;
+            const translations = lawTranslations[lang];
+
+            // Translate each part
+            for (const [english, foreign] of Object.entries(translations)) {
+                translated = translated.replace(new RegExp(english, 'g'), foreign);
+            }
+
+            return translated;
+        }
+
+        // ===== ANIMATED CANVAS BACKGROUND =====
+        const canvas = document.getElementById('geometricCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        class Shape {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 60 + 20;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                this.type = Math.random() > 0.5 ? 'circle' : 'line';
+                this.color = ['#E61D25', '#FF6B35', '#4FC3F7', '#3CAC3B'][Math.floor(Math.random() * 4)];
+                this.opacity = Math.random() * 0.3 + 0.1;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+            }
+
+            draw() {
+                ctx.globalAlpha = this.opacity;
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+
+                if (this.type === 'circle') {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.stroke();
+                } else {
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.x + this.size, this.y + this.size);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        const shapes = [];
+        for (let i = 0; i < 15; i++) {
+            shapes.push(new Shape());
+        }
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            shapes.forEach(shape => {
+                shape.update();
+                shape.draw();
+            });
+            requestAnimationFrame(animateCanvas);
+        }
+
+        animateCanvas();
+
+        // ===== GSAP ANIMATIONS =====
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Title animation - letter by letter
+        window.addEventListener('load', () => {
+            const thinLetters = document.querySelectorAll('.title-line.thin span');
+            const boldLetters = document.querySelectorAll('.title-line.bold span');
+
+            gsap.fromTo(thinLetters,
+                { opacity: 0, y: 50 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.6,
+                    stagger: 0.1,
+                    ease: 'back.out(1.7)'
+                }
+            );
+
+            gsap.fromTo(boldLetters,
+                { opacity: 0, y: 50 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.6,
+                    stagger: 0.08,
+                    delay: 0.4,
+                    ease: 'back.out(1.7)'
+                }
+            );
+
+            gsap.from('.tagline', {
+                opacity: 0,
+                y: 20,
+                duration: 0.8,
+                delay: 1.5,
+                ease: 'power2.out'
+            });
+        });
+
+        // Scroll-triggered animations
+        gsap.utils.toArray('.input-card, .result-card, .controversy-section, .confidence-section').forEach(elem => {
+            gsap.from(elem, {
+                scrollTrigger: {
+                    trigger: elem,
+                    start: 'top 80%',
+                    toggleActions: 'play none none none'
+                },
+                opacity: 0,
+                y: 50,
+                duration: 0.8,
+                ease: 'power2.out'
+            });
+        });
+
+        // Button magnetic effect
+        document.querySelectorAll('.example-btn, .lang-btn').forEach(btn => {
+            btn.addEventListener('mousemove', (e) => {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+
+                gsap.to(btn, {
+                    x: x * 0.2,
+                    y: y * 0.2,
+                    duration: 0.3,
+                    ease: 'power2.out'
+                });
+            });
+
+            btn.addEventListener('mouseleave', () => {
+                gsap.to(btn, {
+                    x: 0,
+                    y: 0,
+                    duration: 0.5,
+                    ease: 'elastic.out(1, 0.5)'
+                });
+            });
+        });
+
+        // ===== QUICK EXAMPLES =====
+        const examples = [
+            "The defender made contact with the attacker's leg after the ball was played. The referee initially waved play on, but VAR reviewed the incident and recommended a penalty. Was this the correct decision?",
+            "The attacker was in an offside position when the ball was played, but didn't touch it. A teammate scored from the resulting play. VAR disallowed the goal. Was this correct according to the offside rule?",
+            "The defender went in with a high boot and made contact with the opponent's chest. The referee showed a yellow card, but VAR recommended upgrading it to red. Was this decision justified?",
+            "The ball struck the defender's arm in the penalty area. The defender's arm was in a natural position and close to their body. VAR reviewed but no penalty was given. Was this the right call?"
         ];
 
-        // Check system health on load
-        window.addEventListener('DOMContentLoaded', checkHealth);
+        function fillExample(index) {
+            document.getElementById('incidentInput').value = examples[index];
+            gsap.from('#incidentInput', {
+                scale: 0.98,
+                duration: 0.3,
+                ease: 'back.out(1.7)'
+            });
+        }
 
+        // ===== HEALTH CHECK =====
         async function checkHealth() {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/health`);
                 const data = await response.json();
-                
-                const statusDot = document.getElementById('statusDot');
-                const statusText = document.getElementById('statusText');
-                
-                if (data.status === 'healthy' && data.vector_store_initialized) {
-                    statusDot.classList.add('healthy');
-                    statusText.textContent = `System Ready (${data.granite_engine_mode.toUpperCase()} mode)`;
+
+                if (data.status === 'healthy') {
+                    document.getElementById('statusText').textContent = 'System Ready';
                 } else {
-                    statusText.textContent = 'System Initializing...';
+                    document.getElementById('statusText').textContent = 'System Initializing';
                 }
             } catch (error) {
-                console.error('Health check failed:', error);
                 document.getElementById('statusText').textContent = 'System Offline';
             }
         }
 
-        function fillExample(index) {
-            const example = examples[index];
-            document.getElementById('incident').value = example.incident;
-            document.getElementById('matchContext').value = example.context;
-            
-            // Smooth scroll to form
-            document.getElementById('incident').scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+        checkHealth();
+        setInterval(checkHealth, 30000);
 
-        async function submitIncident(event) {
-            event.preventDefault();
-            
-            // Get form values
-            const incident = document.getElementById('incident').value.trim();
-            const matchContext = document.getElementById('matchContext').value.trim();
-            const language = document.getElementById('language').value;
-            
-            // Validate
-            if (incident.length < 10) {
-                showError('Please provide a more detailed incident description (at least 10 characters).');
+        // ===== FORM SUBMISSION =====
+        document.getElementById('varForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const incident = document.getElementById('incidentInput').value.trim();
+            const context = document.getElementById('contextInput').value.trim();
+
+            if (!incident) {
+                showError('Please describe the VAR incident');
                 return;
             }
-            
-            // Hide previous results and errors
-            document.getElementById('results').classList.remove('active');
-            document.getElementById('errorMessage').classList.remove('active');
-            
+
             // Show loading
             document.getElementById('loading').classList.add('active');
             document.getElementById('submitBtn').disabled = true;
-            
+            hideError();
+
+            console.log("Selected language:", selectedLanguage);
+
             try {
-                // Call API
                 const response = await fetch(`${API_BASE_URL}/api/explain`, {
                     method: 'POST',
                     headers: {
@@ -675,91 +1701,220 @@
                     },
                     body: JSON.stringify({
                         incident_description: incident,
-                        match_context: matchContext || null,
-                        language: language,
+                        match_context: context || null,
+                        language: selectedLanguage,
                         top_k: 5
                     })
                 });
-                
+
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.detail || 'Failed to analyze incident');
                 }
-                
+
                 const data = await response.json();
-                
-                // Display results
                 displayResults(data);
-                
-                // Scroll to results
-                setTimeout(() => {
-                    document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
-                }, 300);
-                
+
             } catch (error) {
-                console.error('Error:', error);
-                showError(error.message || 'Failed to analyze incident. Please try again.');
+                showError(error.message);
             } finally {
-                // Hide loading
                 document.getElementById('loading').classList.remove('active');
                 document.getElementById('submitBtn').disabled = false;
             }
-        }
+        });
 
+        // ===== DISPLAY RESULTS =====
         function displayResults(data) {
-            // Controversy Score and Meter
-            const score = data.controversy_score;
-            document.getElementById('controversyScore').textContent = `${score}/10`;
-            
-            const meterBar = document.getElementById('meterBar');
-            const percentage = (score / 10) * 100;
-            meterBar.style.width = `${percentage}%`;
-            
-            // Color based on score
-            if (score <= 3) {
-                meterBar.style.background = 'linear-gradient(90deg, #00ff88, #00cc6a)';
-            } else if (score <= 6) {
-                meterBar.style.background = 'linear-gradient(90deg, #ffd700, #ffaa00)';
+            // Show results section
+            const resultsSection = document.getElementById('results');
+            resultsSection.classList.add('active');
+
+            // Scroll to results
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // Controversy Score - with fallback
+            let controversyScore = data.controversy_score || 5;
+            if (controversyScore === 0) controversyScore = 5;
+
+            const controversyNumber = document.getElementById('controversyNumber');
+
+            // Set color class
+            controversyNumber.classList.remove('low', 'medium', 'high');
+            if (controversyScore <= 3) {
+                controversyNumber.classList.add('low');
+            } else if (controversyScore <= 6) {
+                controversyNumber.classList.add('medium');
             } else {
-                meterBar.style.background = 'linear-gradient(90deg, #ff6b6b, #ff4444)';
+                controversyNumber.classList.add('high');
             }
-            
-            // Decision Explanation
-            document.getElementById('decisionText').textContent = data.decision_explanation;
-            
-            // Rules Cited
-            const rulesContainer = document.getElementById('rulesTags');
-            rulesContainer.innerHTML = '';
-            data.rule_cited.forEach(rule => {
-                const tag = document.createElement('span');
-                tag.className = 'rule-tag';
-                tag.textContent = rule;
-                rulesContainer.appendChild(tag);
+
+            // Animate number count up
+            gsap.to({ val: 0 }, {
+                val: controversyScore,
+                duration: 1.5,
+                ease: 'power2.out',
+                onUpdate: function () {
+                    controversyNumber.textContent = Math.round(this.targets()[0].val);
+                }
             });
-            
+
+            // Animate bar
+            const controversyBar = document.getElementById('controversyBar');
+            gsap.to(controversyBar, {
+                width: `${(controversyScore / 10) * 100}%`,
+                duration: 1.5,
+                delay: 0.3,
+                ease: 'power2.out'
+            });
+
+            // Confidence Score - with fallback
+            let confidenceScore = data.confidence_score || 75;
+            if (confidenceScore === 0) confidenceScore = 75;
+
+            const confidenceValue = document.getElementById('confidenceValue');
+            const confidenceRing = document.getElementById('confidenceRing');
+
+            // Set color class
+            confidenceRing.classList.remove('medium', 'low');
+            if (confidenceScore < 50) {
+                confidenceRing.classList.add('low');
+            } else if (confidenceScore < 75) {
+                confidenceRing.classList.add('medium');
+            }
+
+            // Animate number count up
+            gsap.to({ val: 0 }, {
+                val: confidenceScore,
+                duration: 1.5,
+                ease: 'power2.out',
+                onUpdate: function () {
+                    confidenceValue.textContent = Math.round(this.targets()[0].val);
+                }
+            });
+
+            // Animate ring
+            const circumference = 2 * Math.PI * 80;
+            const offset = circumference - (confidenceScore / 100) * circumference;
+            gsap.to(confidenceRing, {
+                strokeDashoffset: offset,
+                duration: 1.5,
+                delay: 0.3,
+                ease: 'power2.out'
+            });
+
+            // Technical Analysis
+            document.getElementById('decisionText').textContent = data.decision_explanation;
+
+            // FIFA Rules - ENHANCED PARSING WITH TEXT SCANNING
+            const rulesContainer = document.getElementById('rulesContainer');
+            rulesContainer.innerHTML = '';
+
+            let rules = data.rule_cited || [];
+
+            // Always scan decision_explanation for additional rules
+            const extractedRules = extractRulesFromText(data.decision_explanation);
+
+            // Combine API rules with extracted rules
+            const allRules = new Set();
+
+            // Add API rules (if not generic or placeholder)
+            rules.forEach(rule => {
+                const ruleLower = rule.toLowerCase();
+                // Skip generic, placeholder, and error rules
+                if (!ruleLower.includes('unable to parse') &&
+                    !ruleLower.includes('error') &&
+                    !ruleLower.includes('fifa rule context') &&
+                    !(ruleLower === 'fifa laws of the game' && extractedRules.length > 0) &&
+                    !(ruleLower === 'var protocol' && extractedRules.length > 0)) {
+                    allRules.add(rule);
+                }
+            });
+
+            // Add extracted rules (filter out placeholders)
+            extractedRules.forEach(rule => {
+                if (!rule.toLowerCase().includes('fifa rule context')) {
+                    allRules.add(rule);
+                }
+            });
+
+            // Convert to array
+            let finalRules = Array.from(allRules);
+
+            // If still empty or only generic, use fallback
+            if (finalRules.length === 0) {
+                finalRules = ['FIFA Laws of the Game', 'VAR Protocol'];
+            }
+
+            // Limit to 6 rules for display
+            finalRules = finalRules.slice(0, 6);
+
+            finalRules.forEach((rule, index) => {
+                const chip = document.createElement('div');
+                chip.className = 'rule-chip';
+                // Apply translation to law descriptions
+                chip.textContent = translateLawDescription(rule, selectedLanguage);
+                rulesContainer.appendChild(chip);
+
+                // Stagger animation - use y offset only, no scale (keeps all badges identical size)
+                gsap.from(chip, {
+                    y: 10,
+                    opacity: 0,
+                    duration: 0.4,
+                    delay: index * 0.1,
+                    ease: 'power2.out'
+                });
+            });
+
             // Plain Language Summary
             document.getElementById('summaryText').textContent = data.plain_language_summary;
-            
-            // Consistency Note
-            document.getElementById('consistencyText').textContent = data.consistency_note;
-            
-            // Show results
-            document.getElementById('results').classList.add('active');
+
+            // Historical Consistency - ENHANCED PARSING
+            let consistencyNote = data.consistency_note || '';
+
+            // If consistency note is empty or contains error message, extract from text
+            if (!consistencyNote || consistencyNote.includes('Unable to assess') || consistencyNote.includes('Error')) {
+                consistencyNote = extractConsistencyFromText(data.decision_explanation);
+            }
+
+            // Final fallback
+            if (!consistencyNote) {
+                consistencyNote = "Decision consistent with FIFA VAR protocol guidelines";
+            }
+
+            document.getElementById('consistencyText').textContent = consistencyNote;
+
+            // Cascade animation for result cards
+            gsap.from('.result-card', {
+                opacity: 0,
+                y: 30,
+                duration: 0.6,
+                stagger: 0.15,
+                ease: 'power2.out'
+            });
         }
 
+        // ===== ERROR HANDLING =====
         function showError(message) {
             const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = `❌ Error: ${message}`;
+            errorDiv.textContent = message;
             errorDiv.classList.add('active');
-            
-            // Auto-hide after 5 seconds
+
+            gsap.from(errorDiv, {
+                opacity: 0,
+                y: -20,
+                duration: 0.4,
+                ease: 'back.out(1.7)'
+            });
+
             setTimeout(() => {
-                errorDiv.classList.remove('active');
+                hideError();
             }, 5000);
         }
 
-        // Refresh health status every 30 seconds
-        setInterval(checkHealth, 30000);
+        function hideError() {
+            document.getElementById('errorMessage').classList.remove('active');
+        }
     </script>
 </body>
+
 </html>

@@ -71,6 +71,7 @@ class VARExplanationResponse(BaseModel):
     decision_explanation: str
     rule_cited: List[str]
     controversy_score: int = Field(..., ge=1, le=10)
+    confidence_score: int = Field(..., ge=1, le=100)
     consistency_note: str
     plain_language_summary: str
     language: str
@@ -307,6 +308,7 @@ async def explain_var_decision(request: VARIncidentRequest):
         # Validate language
         try:
             language = Language(request.language)
+            logger.info(f"Language requested: {request.language}")
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -318,7 +320,7 @@ async def explain_var_decision(request: VARIncidentRequest):
         if request.match_context:
             full_query = f"Match Context: {request.match_context}\n\nIncident: {request.incident_description}"
         
-        logger.info(f"Processing VAR explanation request: {request.incident_description[:100]}...")
+        logger.info(f"Processing VAR explanation request in {language.value}: {request.incident_description[:100]}...")
         
         # Step 1: Retrieve relevant rules from vector store
         logger.info("Retrieving relevant FIFA rules...")
@@ -350,6 +352,7 @@ async def explain_var_decision(request: VARIncidentRequest):
             decision_explanation=explanation.decision_explanation,
             rule_cited=explanation.rule_cited,
             controversy_score=explanation.controversy_score,
+            confidence_score=explanation.confidence_score,
             consistency_note=explanation.consistency_note,
             plain_language_summary=explanation.plain_language_summary,
             language=explanation.language,
@@ -357,7 +360,7 @@ async def explain_var_decision(request: VARIncidentRequest):
             match_context=request.match_context
         )
         
-        logger.info(f"Successfully generated explanation with controversy score: {explanation.controversy_score}")
+        logger.info(f"Successfully generated explanation with controversy score: {explanation.controversy_score}, confidence: {explanation.confidence_score}%")
         return response
         
     except HTTPException:

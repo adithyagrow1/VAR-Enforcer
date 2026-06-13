@@ -25,6 +25,31 @@ class Language(str, Enum):
     SPANISH = "es"
     FRENCH = "fr"
     PORTUGUESE = "pt"
+    GERMAN = "de"
+    ARABIC = "ar"
+    ITALIAN = "it"
+    DUTCH = "nl"
+    JAPANESE = "ja"
+    TURKISH = "tr"
+    CROATIAN = "hr"
+    NORWEGIAN = "no"
+
+
+# Expanded language support dictionary
+SUPPORTED_LANGUAGES = {
+    "en": {"name": "English", "flag": "🇬🇧", "prompt_instruction": "Respond in English"},
+    "es": {"name": "Español", "flag": "🇪🇸", "prompt_instruction": "Responde en español"},
+    "fr": {"name": "Français", "flag": "🇫🇷", "prompt_instruction": "Réponds en français"},
+    "pt": {"name": "Português", "flag": "🇧🇷", "prompt_instruction": "Responda em português"},
+    "de": {"name": "Deutsch", "flag": "🇩🇪", "prompt_instruction": "Antworte auf Deutsch"},
+    "ar": {"name": "العربية", "flag": "🇸🇦", "prompt_instruction": "أجب باللغة العربية"},
+    "it": {"name": "Italiano", "flag": "🇮🇹", "prompt_instruction": "Rispondi in italiano"},
+    "nl": {"name": "Nederlands", "flag": "🇳🇱", "prompt_instruction": "Antwoord in het Nederlands"},
+    "ja": {"name": "日本語", "flag": "🇯🇵", "prompt_instruction": "日本語で答えてください"},
+    "tr": {"name": "Türkçe", "flag": "🇹🇷", "prompt_instruction": "Türkçe yanıt ver"},
+    "hr": {"name": "Hrvatski", "flag": "🇭🇷", "prompt_instruction": "Odgovori na hrvatskom"},
+    "no": {"name": "Norsk", "flag": "🇳🇴", "prompt_instruction": "Svar på norsk"}
+}
 
 
 class VARExplanation:
@@ -37,7 +62,8 @@ class VARExplanation:
         controversy_score: int,
         consistency_note: str,
         plain_language_summary: str,
-        language: str = "en"
+        language: str = "en",
+        confidence_score: int = 75
     ):
         self.decision_explanation = decision_explanation
         self.rule_cited = rule_cited
@@ -45,6 +71,7 @@ class VARExplanation:
         self.consistency_note = consistency_note
         self.plain_language_summary = plain_language_summary
         self.language = language
+        self.confidence_score = confidence_score
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""
@@ -53,6 +80,7 @@ class VARExplanation:
             "rule_cited": self.rule_cited,
             "controversy_score": self.controversy_score,
             "consistency_note": self.consistency_note,
+            "confidence_score": self.confidence_score,
             "plain_language_summary": self.plain_language_summary,
             "language": self.language
         }
@@ -130,13 +158,11 @@ class GraniteEngine:
         Returns:
             Formatted prompt string
         """
-        # Language-specific instructions
-        language_instructions = {
-            Language.ENGLISH: "Respond in English.",
-            Language.SPANISH: "Responde en español.",
-            Language.FRENCH: "Répondez en français.",
-            Language.PORTUGUESE: "Responda em português."
-        }
+        # Get language instruction from SUPPORTED_LANGUAGES dictionary
+        lang_code = language.value if isinstance(language, Language) else language
+        language_instruction = SUPPORTED_LANGUAGES.get(lang_code, SUPPORTED_LANGUAGES["en"])["prompt_instruction"]
+        
+        logger.info(f"Building prompt with language instruction: {language_instruction}")
         
         # Build context from chunks
         context_text = "\n\n".join([
@@ -144,7 +170,9 @@ class GraniteEngine:
             for i, chunk in enumerate(context_chunks[:5])
         ])
         
-        prompt = f"""You are an expert FIFA VAR (Video Assistant Referee) analyst. Your task is to explain VAR decisions based on official FIFA Laws of the Game.
+        prompt = f"""LANGUAGE REQUIREMENT: {language_instruction}. ALL responses must be in this language.
+
+You are an expert FIFA VAR (Video Assistant Referee) analyst. Your task is to explain VAR decisions based on official FIFA Laws of the Game.
 
 USER QUERY:
 {query}
@@ -160,16 +188,21 @@ INSTRUCTIONS:
    - 1-3: Clear-cut decision, minimal controversy
    - 4-6: Moderate controversy, some debate expected
    - 7-10: Highly controversial, emotionally charged
-5. Assess historical consistency with similar past decisions
-6. Provide a plain language summary accessible to casual fans
+5. Rate your confidence in this analysis (1-100 scale):
+   - 75-100: High confidence, clear rule application
+   - 50-74: Moderate confidence, some interpretation needed
+   - Below 50: Low confidence, ambiguous situation
+6. Assess historical consistency with similar past decisions
+7. Provide a plain language summary accessible to casual fans
 
-{language_instructions[language]}
+CRITICAL: Remember to {language_instruction}. Your entire response must be in the requested language.
 
 OUTPUT FORMAT (JSON):
 {{
   "decision_explanation": "Detailed technical explanation of the VAR decision with rule citations",
   "rule_cited": ["List of specific FIFA rule numbers/sections referenced"],
   "controversy_score": <integer 1-10>,
+  "confidence_score": <integer 1-100>,
   "consistency_note": "Brief note on how this aligns with historical VAR decisions",
   "plain_language_summary": "Simple explanation a casual fan would understand"
 }}
@@ -180,7 +213,7 @@ Generate the JSON response now:"""
     
     def _parse_response(self, response_text: str, language: str) -> VARExplanation:
         """
-        Parse Granite's response into structured format
+        Parse Granite's response into structured format with robust fallback strategies
         
         Args:
             response_text: Raw response from Granite
@@ -189,38 +222,166 @@ Generate the JSON response now:"""
         Returns:
             VARExplanation object
         """
+        # Log raw response for debugging
+        logger.info(f"Raw Granite response (first 500 chars): {response_text[:500]}")
+        
+        # Strategy 1: Try standard JSON parsing
         try:
-            # Try to extract JSON from response
             start_idx = response_text.find('{')
             end_idx = response_text.rfind('}') + 1
             
             if start_idx != -1 and end_idx > start_idx:
                 json_str = response_text[start_idx:end_idx]
                 data = json.loads(json_str)
-            else:
-                data = json.loads(response_text)
+                
+                return VARExplanation(
+                    decision_explanation=data.get("decision_explanation", ""),
+                    rule_cited=data.get("rule_cited", []),
+                    controversy_score=int(data.get("controversy_score", 5)),
+                    consistency_note=data.get("consistency_note", ""),
+                    plain_language_summary=data.get("plain_language_summary", ""),
+                    language=language,
+                    confidence_score=int(data.get("confidence_score", 75))
+                )
+        except (json.JSONDecodeError, ValueError, KeyError) as e:
+            logger.warning(f"JSON parsing failed: {str(e)}, trying fallback strategies")
+        
+        # Strategy 2: Try to fix common JSON issues
+        try:
+            # Remove markdown code blocks if present
+            cleaned = response_text.replace('```json', '').replace('```', '')
             
-            return VARExplanation(
-                decision_explanation=data.get("decision_explanation", ""),
-                rule_cited=data.get("rule_cited", []),
-                controversy_score=int(data.get("controversy_score", 5)),
-                consistency_note=data.get("consistency_note", ""),
-                plain_language_summary=data.get("plain_language_summary", ""),
-                language=language
-            )
-            
-        except json.JSONDecodeError as e:
-            logger.error(f"Error parsing JSON response: {str(e)}")
-            logger.debug(f"Response text: {response_text}")
-            
-            return VARExplanation(
-                decision_explanation=response_text[:500] if response_text else "Unable to generate explanation",
-                rule_cited=["Unable to parse specific rules"],
-                controversy_score=5,
-                consistency_note="Unable to assess consistency",
-                plain_language_summary=response_text[:200] if response_text else "Error occurred",
-                language=language
-            )
+            # Try to find JSON with more lenient approach
+            import re
+            json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', cleaned, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(0)
+                # Fix common issues: trailing commas, single quotes
+                json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)  # Remove trailing commas
+                json_str = json_str.replace("'", '"')  # Replace single quotes
+                
+                data = json.loads(json_str)
+                
+                return VARExplanation(
+                    decision_explanation=data.get("decision_explanation", ""),
+                    rule_cited=data.get("rule_cited", []),
+                    controversy_score=int(data.get("controversy_score", 5)),
+                    consistency_note=data.get("consistency_note", ""),
+                    plain_language_summary=data.get("plain_language_summary", ""),
+                    language=language,
+                    confidence_score=int(data.get("confidence_score", 75))
+                )
+        except Exception as e:
+            logger.warning(f"Lenient JSON parsing failed: {str(e)}, using text extraction fallback")
+        
+        # Strategy 3: Text extraction fallback - extract information from raw text
+        logger.info("Using text extraction fallback to parse response")
+        
+        # Extract decision explanation (first substantial paragraph)
+        decision_explanation = response_text.strip()
+        if len(decision_explanation) > 500:
+            # Take first 500 chars as explanation
+            decision_explanation = decision_explanation[:500] + "..."
+        
+        # Extract rules cited - look for "Law", "Rule", "FIFA", "Article" mentions
+        import re
+        rule_cited = []
+        
+        # Pattern 1: "Law X" or "Rule X"
+        law_matches = re.findall(r'(?:Law|Rule|Article)\s+\d+[A-Za-z]?(?:\s*[-–]\s*[^.,\n]{0,50})?', response_text, re.IGNORECASE)
+        rule_cited.extend(law_matches[:5])  # Limit to 5 rules
+        
+        # Pattern 2: "FIFA" followed by relevant text
+        fifa_matches = re.findall(r'FIFA[^.,\n]{0,50}', response_text, re.IGNORECASE)
+        rule_cited.extend(fifa_matches[:2])
+        
+        # Pattern 3: "VAR Protocol" mentions
+        var_matches = re.findall(r'VAR\s+Protocol[^.,\n]{0,50}', response_text, re.IGNORECASE)
+        rule_cited.extend(var_matches[:2])
+        
+        # If no rules found, provide generic reference
+        if not rule_cited:
+            rule_cited = ["FIFA Laws of the Game", "VAR Protocol"]
+        
+        # Remove duplicates and limit to 5
+        rule_cited = list(dict.fromkeys(rule_cited))[:5]
+        
+        # Extract controversy score - look for numbers 1-10
+        controversy_score = 5  # Default
+        controversy_patterns = [
+            r'controversy[:\s]+(\d+)',
+            r'controversy score[:\s]+(\d+)',
+            r'rated?\s+(\d+)\s*(?:out of|/)\s*10',
+            r'score[:\s]+(\d+)'
+        ]
+        for pattern in controversy_patterns:
+            match = re.search(pattern, response_text, re.IGNORECASE)
+            if match:
+                score = int(match.group(1))
+                if 1 <= score <= 10:
+                    controversy_score = score
+                    break
+        
+        # Extract confidence score - look for percentage or number 1-100
+        confidence_score = 75  # Default
+        confidence_patterns = [
+            r'confidence[:\s]+(\d+)%?',
+            r'confidence score[:\s]+(\d+)%?',
+            r'(\d+)%?\s+confidence',
+            r'certainty[:\s]+(\d+)%?'
+        ]
+        for pattern in confidence_patterns:
+            match = re.search(pattern, response_text, re.IGNORECASE)
+            if match:
+                score = int(match.group(1))
+                if 1 <= score <= 100:
+                    confidence_score = score
+                    break
+        
+        # Extract consistency note - look for sentences with consistency keywords
+        consistency_note = "This decision follows established VAR protocols."  # Default
+        consistency_keywords = ['consistent', 'consistency', 'similar', 'historical', 'previous', 'past', 'align', 'standard']
+        
+        sentences = re.split(r'[.!?]+', response_text)
+        for sentence in sentences:
+            if any(keyword in sentence.lower() for keyword in consistency_keywords):
+                consistency_note = sentence.strip()
+                if len(consistency_note) > 200:
+                    consistency_note = consistency_note[:200] + "..."
+                break
+        
+        # Extract plain language summary - look for summary section or use last paragraph
+        plain_language_summary = decision_explanation[:200]  # Default to first 200 chars
+        
+        summary_patterns = [
+            r'(?:plain language|summary|in simple terms|simply put)[:\s]+([^.!?]+[.!?])',
+            r'(?:casual fans?|general audience)[:\s]+([^.!?]+[.!?])'
+        ]
+        for pattern in summary_patterns:
+            match = re.search(pattern, response_text, re.IGNORECASE)
+            if match:
+                plain_language_summary = match.group(1).strip()
+                break
+        
+        # If no summary found, use last substantial sentence
+        if plain_language_summary == decision_explanation[:200]:
+            sentences = [s.strip() for s in re.split(r'[.!?]+', response_text) if len(s.strip()) > 50]
+            if sentences:
+                plain_language_summary = sentences[-1]
+                if len(plain_language_summary) > 200:
+                    plain_language_summary = plain_language_summary[:200] + "..."
+        
+        logger.info(f"Extracted via fallback - Rules: {len(rule_cited)}, Controversy: {controversy_score}, Confidence: {confidence_score}")
+        
+        return VARExplanation(
+            decision_explanation=decision_explanation,
+            rule_cited=rule_cited,
+            controversy_score=controversy_score,
+            consistency_note=consistency_note,
+            plain_language_summary=plain_language_summary,
+            language=language,
+            confidence_score=confidence_score
+        )
     
     def _generate_with_ollama(
         self,
@@ -299,6 +460,7 @@ Generate the JSON response now:"""
                 "decision_explanation": f"Based on the FIFA Laws of the Game, this VAR decision involves careful analysis of the incident. The referee's original decision was reviewed using video evidence. Context: {rule_context}... The VAR protocol requires clear and obvious errors to be corrected. In this case, the evidence supports the final decision made.",
                 "rule_cited": ["Law 5 - The Referee", "Law 12 - Fouls and Misconduct", "VAR Protocol Section 3"],
                 "controversy_score": 6,
+                "confidence_score": 78,
                 "consistency_note": "This decision aligns with similar VAR interventions seen in recent major tournaments. The threshold for 'clear and obvious error' has been consistently applied.",
                 "plain_language_summary": "The VAR checked the incident and found enough evidence to support the referee's decision. While some fans may disagree, the call follows the official rules and is consistent with how similar situations have been handled."
             },
@@ -306,6 +468,7 @@ Generate the JSON response now:"""
                 "decision_explanation": f"Según las Leyes del Juego de la FIFA, esta decisión del VAR implica un análisis cuidadoso del incidente. Contexto: {rule_context}... El protocolo VAR requiere errores claros y obvios para ser corregidos.",
                 "rule_cited": ["Ley 5 - El Árbitro", "Ley 12 - Faltas y Conducta Incorrecta", "Protocolo VAR Sección 3"],
                 "controversy_score": 6,
+                "confidence_score": 78,
                 "consistency_note": "Esta decisión se alinea con intervenciones VAR similares en torneos recientes.",
                 "plain_language_summary": "El VAR revisó el incidente y encontró suficiente evidencia para apoyar la decisión del árbitro."
             },
@@ -313,6 +476,7 @@ Generate the JSON response now:"""
                 "decision_explanation": f"Selon les Lois du Jeu de la FIFA, cette décision VAR implique une analyse minutieuse de l'incident. Contexte: {rule_context}... Le protocole VAR nécessite des erreurs claires et évidentes pour être corrigées.",
                 "rule_cited": ["Loi 5 - L'Arbitre", "Loi 12 - Fautes et Comportement Antisportif", "Protocole VAR Section 3"],
                 "controversy_score": 6,
+                "confidence_score": 78,
                 "consistency_note": "Cette décision s'aligne avec des interventions VAR similaires dans les tournois récents.",
                 "plain_language_summary": "Le VAR a vérifié l'incident et a trouvé suffisamment de preuves pour soutenir la décision de l'arbitre."
             },
@@ -320,8 +484,73 @@ Generate the JSON response now:"""
                 "decision_explanation": f"De acordo com as Leis do Jogo da FIFA, esta decisão do VAR envolve análise cuidadosa do incidente. Contexto: {rule_context}... O protocolo VAR requer erros claros e óbvios para serem corrigidos.",
                 "rule_cited": ["Lei 5 - O Árbitro", "Lei 12 - Faltas e Má Conduta", "Protocolo VAR Seção 3"],
                 "controversy_score": 6,
+                "confidence_score": 78,
                 "consistency_note": "Esta decisão está alinhada com intervenções VAR similares em torneios recentes.",
                 "plain_language_summary": "O VAR verificou o incidente e encontrou evidências suficientes para apoiar a decisão do árbitro."
+            },
+            Language.GERMAN: {
+                "decision_explanation": f"Gemäß den FIFA-Spielregeln erfordert diese VAR-Entscheidung eine sorgfältige Analyse des Vorfalls. Kontext: {rule_context}... Das VAR-Protokoll erfordert klare und offensichtliche Fehler zur Korrektur.",
+                "rule_cited": ["Regel 5 - Der Schiedsrichter", "Regel 12 - Fouls und unsportliches Verhalten", "VAR-Protokoll Abschnitt 3"],
+                "controversy_score": 6,
+                "confidence_score": 78,
+                "consistency_note": "Diese Entscheidung entspricht ähnlichen VAR-Eingriffen bei jüngsten großen Turnieren.",
+                "plain_language_summary": "Der VAR überprüfte den Vorfall und fand genügend Beweise zur Unterstützung der Schiedsrichterentscheidung."
+            },
+            Language.ARABIC: {
+                "decision_explanation": f"بناءً على قوانين اللعبة من الفيفا، يتطلب قرار الفار هذا تحليلاً دقيقاً للحادثة. السياق: {rule_context}... يتطلب بروتوكول الفار أخطاء واضحة وجلية ليتم تصحيحها.",
+                "rule_cited": ["القانون 5 - الحكم", "القانون 12 - الأخطاء وسوء السلوك", "بروتوكول الفار القسم 3"],
+                "controversy_score": 6,
+                "confidence_score": 78,
+                "consistency_note": "يتماشى هذا القرار مع تدخلات الفار المماثلة في البطولات الكبرى الأخيرة.",
+                "plain_language_summary": "راجع الفار الحادثة ووجد أدلة كافية لدعم قرار الحكم."
+            },
+            Language.ITALIAN: {
+                "decision_explanation": f"Secondo le Regole del Gioco FIFA, questa decisione VAR richiede un'analisi attenta dell'incidente. Contesto: {rule_context}... Il protocollo VAR richiede errori chiari ed evidenti da correggere.",
+                "rule_cited": ["Regola 5 - L'Arbitro", "Regola 12 - Falli e Scorrettezze", "Protocollo VAR Sezione 3"],
+                "controversy_score": 6,
+                "confidence_score": 78,
+                "consistency_note": "Questa decisione è in linea con interventi VAR simili visti nei recenti tornei importanti.",
+                "plain_language_summary": "Il VAR ha controllato l'incidente e ha trovato prove sufficienti per supportare la decisione dell'arbitro."
+            },
+            Language.DUTCH: {
+                "decision_explanation": f"Volgens de FIFA-spelregels vereist deze VAR-beslissing een zorgvuldige analyse van het incident. Context: {rule_context}... Het VAR-protocol vereist duidelijke en voor de hand liggende fouten om te corrigeren.",
+                "rule_cited": ["Regel 5 - De Scheidsrechter", "Regel 12 - Overtredingen en Wangedrag", "VAR-protocol Sectie 3"],
+                "controversy_score": 6,
+                "confidence_score": 78,
+                "consistency_note": "Deze beslissing sluit aan bij vergelijkbare VAR-interventies in recente grote toernooien.",
+                "plain_language_summary": "De VAR controleerde het incident en vond voldoende bewijs om de beslissing van de scheidsrechter te ondersteunen."
+            },
+            Language.JAPANESE: {
+                "decision_explanation": f"FIFAの競技規則に基づき、このVAR判定には事象の慎重な分析が必要です。コンテキスト: {rule_context}... VARプロトコルは、明白な誤りを修正する必要があります。",
+                "rule_cited": ["規則5 - 主審", "規則12 - ファウルと不正行為", "VARプロトコル セクション3"],
+                "controversy_score": 6,
+                "confidence_score": 78,
+                "consistency_note": "この判定は、最近の主要トーナメントで見られた同様のVAR介入と一致しています。",
+                "plain_language_summary": "VARは事象を確認し、主審の判定を支持する十分な証拠を見つけました。"
+            },
+            Language.TURKISH: {
+                "decision_explanation": f"FIFA Oyun Kurallarına göre, bu VAR kararı olayın dikkatli bir analizini gerektirir. Bağlam: {rule_context}... VAR protokolü, düzeltilmesi gereken açık ve belirgin hatalar gerektirir.",
+                "rule_cited": ["Kural 5 - Hakem", "Kural 12 - Fauller ve Kötü Davranış", "VAR Protokolü Bölüm 3"],
+                "controversy_score": 6,
+                "confidence_score": 78,
+                "consistency_note": "Bu karar, son büyük turnuvalarda görülen benzer VAR müdahaleleriyle uyumludur.",
+                "plain_language_summary": "VAR olayı kontrol etti ve hakemin kararını desteklemek için yeterli kanıt buldu."
+            },
+            Language.CROATIAN: {
+                "decision_explanation": f"Prema FIFA pravilima igre, ova VAR odluka zahtijeva pažljivu analizu incidenta. Kontekst: {rule_context}... VAR protokol zahtijeva jasne i očite pogreške za ispravak.",
+                "rule_cited": ["Pravilo 5 - Sudac", "Pravilo 12 - Prekršaji i Neprimjereno Ponašanje", "VAR Protokol Odjeljak 3"],
+                "controversy_score": 6,
+                "confidence_score": 78,
+                "consistency_note": "Ova odluka je u skladu sa sličnim VAR intervencijama viđenim na nedavnim velikim turnirima.",
+                "plain_language_summary": "VAR je provjerio incident i pronašao dovoljno dokaza za podršku sudačkoj odluci."
+            },
+            Language.NORWEGIAN: {
+                "decision_explanation": f"I henhold til FIFAs spilleregler krever denne VAR-avgjørelsen en nøye analyse av hendelsen. Kontekst: {rule_context}... VAR-protokollen krever klare og åpenbare feil for å korrigeres.",
+                "rule_cited": ["Regel 5 - Dommeren", "Regel 12 - Overtredelser og Ufint Spill", "VAR-protokoll Seksjon 3"],
+                "controversy_score": 6,
+                "confidence_score": 78,
+                "consistency_note": "Denne avgjørelsen er i tråd med lignende VAR-inngrep sett i nylige store turneringer.",
+                "plain_language_summary": "VAR sjekket hendelsen og fant nok bevis til å støtte dommerens avgjørelse."
             }
         }
         
@@ -333,7 +562,8 @@ Generate the JSON response now:"""
             controversy_score=response_data["controversy_score"],
             consistency_note=response_data["consistency_note"],
             plain_language_summary=response_data["plain_language_summary"],
-            language=language.value
+            language=language.value,
+            confidence_score=response_data["confidence_score"]
         )
     
     def explain_var_decision(
@@ -358,7 +588,9 @@ Generate the JSON response now:"""
             VARExplanation object with structured response
         """
         try:
-            logger.info(f"Generating VAR explanation for query: {query[:100]}...")
+            lang_code = language.value if isinstance(language, Language) else language
+            logger.info(f"Generating VAR explanation in language: {lang_code}")
+            logger.info(f"Query: {query[:100]}...")
             
             if self.demo_mode:
                 return self._generate_demo_response(query, context_chunks, language)
@@ -430,7 +662,7 @@ Generate the JSON response now:"""
             "ollama_url": self.ollama_url,
             "api_url": self.api_url,
             "ollama_available": self._check_ollama_available() if not self.demo_mode else False,
-            "supported_languages": [lang.value for lang in Language]
+            "supported_languages": SUPPORTED_LANGUAGES
         }
 
 
